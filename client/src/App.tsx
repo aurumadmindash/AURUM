@@ -27,6 +27,7 @@ const CompensationScenariosPage = lazy(() => import('./pages/compensation-events
 const RequestQuotePage = lazy(() => import('./pages/marketing/RequestQuotePage'))
 const PaymentPage = lazy(() => import('./pages/marketing/PaymentPage'))
 const LegalPage = lazy(() => import('./pages/marketing/LegalPage'))
+const BoqSamplePage = lazy(() => import('./pages/marketing/BoqSamplePage'))
 const JobsDashboardPage = lazy(() => import('./pages/jobs/JobsDashboardPage'))
 const JobDetailPage = lazy(() => import('./pages/jobs/JobDetailPage'))
 const FeeProposalPage = lazy(() => import('./pages/jobs/FeeProposalPage'))
@@ -50,6 +51,7 @@ export default function App() {
         {/* Public marketing site */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/request-quote" element={<RequestQuotePage />} />
+        <Route path="/boq-samples/:sample" element={<BoqSamplePage />} />
         <Route path="/payment/:invoiceNumber" element={<PaymentPage />} />
         <Route path="/legal/:type" element={<LegalPage />} />
 

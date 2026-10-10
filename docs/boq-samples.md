@@ -42,3 +42,7 @@ npx tsx server/scripts/create-boq-preview.ts 'path-to-client-workbook.xlsx'
 ```
 
 Both public examples are labelled as samples, contain no identifying client names, and serve distinct purposes. Before a document is issued for a live tender, quantities, scope, specifications, current rates and tax treatment must be confirmed for that actual project.
+
+## Mobile previews
+
+The website opens `/boq-samples/1` and `/boq-samples/2` with page navigation, zoom, and separate PDF/Excel downloads. These use static WebP pages under `/samples/previews/`, so viewing does not depend on a mobile browser's PDF support. After changing either PDF, regenerate the matching preview images with `python server/scripts/render-boq-previews.py` (requires PyMuPDF and Pillow). Update the viewer's page count if the document length changes.
