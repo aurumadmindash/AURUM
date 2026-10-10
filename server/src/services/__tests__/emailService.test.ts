@@ -15,6 +15,14 @@ beforeEach(() => {
 })
 
 describe('project email delivery', () => {
+  it.each([
+    ['contact@aurumite.com', '"Aurum Project Controls" <contact@aurumite.com>'],
+    ['Aurum <contact@aurumite.com>', 'Aurum <contact@aurumite.com>'],
+  ])('keeps a valid sender address for %s', async (sender, expected) => {
+    vi.stubEnv('SMTP_FROM', sender)
+    await sendQuoteReceivedEmail('sender@example.com', 'Client', 'Site')
+    expect(mocks.sendMail.mock.calls[0][0].from).toBe(expected)
+  })
   it('acknowledges receipt and review of a tender in both HTML and plain text', async () => {
     await sendQuoteReceivedEmail('sender@example.com', 'Client & team', 'Site <tender>')
     const message = mocks.sendMail.mock.calls[0][0]
