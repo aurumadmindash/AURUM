@@ -1,0 +1,451 @@
+{
+  "basis": [
+    "SAMPLE 2 - COMPLETION BASIS; READ WITH ALL BILL PAGES",
+    "This is a completed sample copy of the supplied template, not a measured client project. No drawings were supplied. Original source file remains unchanged.",
+    "Sample measurement model: five detached two-storey two-bedroom dwellings; each footprint 10 x 8 m, two 3 m storeys. Ground and upper gross areas are 400 m2 each. This model is a stated scope, not a survey.",
+    "Per dwelling: seven windows; two external doors; one garage shutter; six 900 mm and three 750 mm internal doors. Internal partitions total 80 m per dwelling, measured across both storeys.",
+    "Per dwelling net finished floors: ceramic 120 m2 + granite 17 m2 + garage 15 m2 = 152 m2; gross 160 m2 less 8 m2 wall/void allowance. Wall tiles: 50 m2 per dwelling.",
+    "Structural sizes and reinforcement quantities are provisional sample allowances, not structural design. Source mass allowances 150 kg/m3 (bases/stubs) and 190 kg/m3 (frame) are split by stated percentages; all require engineered schedules for a live project.",
+    "External-work quantities and all supplied lump sums are retained from the source; they were not measured against this model. Original rates and allowances remain GBP without conversion or market validation.",
+    "All priced amounts are displayed quantity x supplied rate, rounded to pence. Collections and summaries are recalculated. Zero means excluded/not applicable; alternative prices are zero because no alternative quotation was supplied.",
+    "Source unit key: CM = cubic metres (m3); SM = square metres (m2); M = linear metres; Kg = kilograms; Nr = number; sum = one complete provisional/lump-sum allowance.",
+    "Unsupported extra building bills from the source summary are explicitly excluded, rather than inventing entire missing buildings. The five-dwelling bill and external works are included once only.",
+    "The source 20% VAT arithmetic is retained for illustration only; applicability to an actual new-build project has not been established. Preliminaries and contingency are the original source allowances.",
+    "Measurement reference: RICS NRM guidance https://www.rics.org/profession-standards/rics-standards-and-guidance/sector-standards/construction-standards/nrm . No claim of full NRM compliance is made."
+  ],
+  "measurements": [
+    {
+      "row": 9,
+      "quantity": 60,
+      "basis": "5 x 10 x 8 m footprint x 0.15 m reduced-level excavation"
+    },
+    {
+      "row": 12,
+      "quantity": 144,
+      "basis": "240 m strip trenches x 0.60 m width x 1.00 m depth; separate from internal column pits"
+    },
+    {
+      "row": 15,
+      "quantity": 69.12,
+      "basis": "40 separate internal column pits x 1.20 x 1.20 x 1.20 m"
+    },
+    {
+      "row": 18,
+      "quantity": 125.86,
+      "basis": "Trench/pit excavation less footing, bases, stubs and foundation blockwork volumes"
+    },
+    {
+      "row": 21,
+      "quantity": 147.26,
+      "basis": "Reduced-level + foundation excavation less return fill; all surplus removed"
+    },
+    {
+      "row": 24,
+      "quantity": 120,
+      "basis": "400 m2 footprint x 0.30 m compacted fill"
+    },
+    {
+      "row": 27,
+      "quantity": 400,
+      "basis": "400 m2 net footprint; laps included in the supplied rate"
+    },
+    {
+      "row": 32,
+      "quantity": 8.06,
+      "basis": "Strip/pit base areas x 0.04 m blinding thickness"
+    },
+    {
+      "row": 35,
+      "quantity": 36,
+      "basis": "240 x 0.60 x 0.25 m strip footing"
+    },
+    {
+      "row": 40,
+      "quantity": 14,
+      "basis": "40 x 1.00 x 1.00 x 0.35 m bases"
+    },
+    {
+      "row": 43,
+      "quantity": 1.38,
+      "basis": "40 x 0.23 x 0.23 x 0.65 m column stubs"
+    },
+    {
+      "row": 46,
+      "quantity": 60,
+      "basis": "400 m2 ground-floor slab x 0.15 m"
+    },
+    {
+      "row": 55,
+      "quantity": 56,
+      "basis": "40 bases x four 1.00 m sides x 0.35 m depth"
+    },
+    {
+      "row": 58,
+      "quantity": 50.92,
+      "basis": "Column stub faces plus exposed slab perimeter edge"
+    },
+    {
+      "row": 64,
+      "quantity": 691.89,
+      "basis": "30% of 150 kg/m3 provisional reinforcement allowance on bases and stubs"
+    },
+    {
+      "row": 67,
+      "quantity": 691.89,
+      "basis": "30% of the same provisional reinforcement allowance"
+    },
+    {
+      "row": 70,
+      "quantity": 576.58,
+      "basis": "25% of the same provisional reinforcement allowance"
+    },
+    {
+      "row": 73,
+      "quantity": 345.95,
+      "basis": "15% of the same provisional reinforcement allowance"
+    },
+    {
+      "row": 77,
+      "quantity": 400,
+      "basis": "400 m2 net ground-floor slab mesh; no lap area added"
+    },
+    {
+      "row": 80,
+      "quantity": 156,
+      "basis": "240 m foundation wall length x 0.65 m height"
+    },
+    {
+      "row": 161,
+      "quantity": 12.7,
+      "basis": "40 columns x 0.23 x 0.23 x 6.00 m above ground"
+    },
+    {
+      "row": 164,
+      "quantity": 24.84,
+      "basis": "240 m floor-beam length x 0.23 x 0.45 m; separate sample beam/slab volumes"
+    },
+    {
+      "row": 167,
+      "quantity": 16.56,
+      "basis": "240 m roof-beam length x 0.23 x 0.30 m"
+    },
+    {
+      "row": 170,
+      "quantity": 3.3,
+      "basis": "5 stair waist slabs x 1.10 x 4.00 x 0.15 m; steps included in allowance"
+    },
+    {
+      "row": 173,
+      "quantity": 0,
+      "basis": "0: lintels are priced with reinforcement under item F on source page 2/5; avoids duplicate pricing"
+    },
+    {
+      "row": 176,
+      "quantity": 60,
+      "basis": "400 m2 upper-floor slab x 0.15 m"
+    },
+    {
+      "row": 181,
+      "quantity": 220.8,
+      "basis": "40 columns x four 0.23 m sides x 6.00 m height"
+    },
+    {
+      "row": 184,
+      "quantity": 271.2,
+      "basis": "240 m floor beams x two sides and soffit widths"
+    },
+    {
+      "row": 187,
+      "quantity": 199.2,
+      "basis": "240 m roof beams x two sides and soffit widths"
+    },
+    {
+      "row": 190,
+      "quantity": 0,
+      "basis": "0: precast lintel rate includes the complete item; no separate formwork"
+    },
+    {
+      "row": 193,
+      "quantity": 400,
+      "basis": "400 m2 net suspended-floor soffit"
+    },
+    {
+      "row": 196,
+      "quantity": 28,
+      "basis": "5 stairs: sloping soffit plus two waist edges"
+    },
+    {
+      "row": 216,
+      "quantity": 6691.57,
+      "basis": "30% of source 190 kg/m3 provisional reinforcement allowance; excludes precast lintels"
+    },
+    {
+      "row": 219,
+      "quantity": 8922.1,
+      "basis": "40% of the same provisional reinforcement allowance"
+    },
+    {
+      "row": 222,
+      "quantity": 4461.05,
+      "basis": "20% of the same provisional reinforcement allowance"
+    },
+    {
+      "row": 226,
+      "quantity": 2230.52,
+      "basis": "10% of the same provisional reinforcement allowance"
+    },
+    {
+      "row": 231,
+      "quantity": 44.5,
+      "basis": "Sum of window widths: seven scheduled windows per dwelling"
+    },
+    {
+      "row": 234,
+      "quantity": 90,
+      "basis": "18 m total precast lintel length per dwelling, including end bearings"
+    },
+    {
+      "row": 319,
+      "quantity": 571.58,
+      "basis": "5 separate 11 x 9 m roofs on plan, 30-degree slope; includes overhangs"
+    },
+    {
+      "row": 324,
+      "quantity": 55,
+      "basis": "5 ridges x 11 m"
+    },
+    {
+      "row": 327,
+      "quantity": 110,
+      "basis": "5 roofs x two 11 m eaves"
+    },
+    {
+      "row": 330,
+      "quantity": 0,
+      "basis": "0: detached pitched roofs have no abutment flashing in this sample scope"
+    },
+    {
+      "row": 333,
+      "quantity": 103.92,
+      "basis": "Four sloping verge edges per roof x 4.5/cos(30 degrees)"
+    },
+    {
+      "row": 338,
+      "quantity": 180,
+      "basis": "Two 10 m wall plates plus two 8 m returns per dwelling"
+    },
+    {
+      "row": 341,
+      "quantity": 1039.23,
+      "basis": "20 trusses per dwelling x two sloping rafters"
+    },
+    {
+      "row": 344,
+      "quantity": 900,
+      "basis": "100 trusses x 9 m tie span"
+    },
+    {
+      "row": 347,
+      "quantity": 400,
+      "basis": "100 trusses x two 2 m struts"
+    },
+    {
+      "row": 350,
+      "quantity": 550,
+      "basis": "Five purlin lines per roof slope x two slopes x 11 m"
+    },
+    {
+      "row": 353,
+      "quantity": 1416.67,
+      "basis": "600 mm grid over 400 m2 upper ceiling, plus transverse noggins over 50 m2 eaves"
+    },
+    {
+      "row": 365,
+      "quantity": 213.92,
+      "basis": "Both eaves plus four sloping verges per roof"
+    },
+    {
+      "row": 368,
+      "quantity": 5,
+      "basis": "One 3.00 x 1.50 m pergola per dwelling"
+    },
+    {
+      "row": 471,
+      "quantity": 980.11,
+      "basis": "180 m total external perimeter x 6 m height, less scheduled windows and external doors"
+    },
+    {
+      "row": 474,
+      "quantity": 1119.68,
+      "basis": "80 m internal partitions per dwelling x 3 m storey height, less internal door openings"
+    },
+    {
+      "row": 481,
+      "quantity": 5,
+      "basis": "One 900 x 900 mm window per dwelling"
+    },
+    {
+      "row": 484,
+      "quantity": 10,
+      "basis": "Two 900 x 1200 mm windows per dwelling"
+    },
+    {
+      "row": 487,
+      "quantity": 5,
+      "basis": "One 2300 x 1200 mm window per dwelling"
+    },
+    {
+      "row": 490,
+      "quantity": 10,
+      "basis": "Two 1200 x 1200 mm bedroom windows per dwelling"
+    },
+    {
+      "row": 493,
+      "quantity": 5,
+      "basis": "One 1500 x 1200 mm window per dwelling"
+    },
+    {
+      "row": 520,
+      "quantity": 5,
+      "basis": "One 1200 mm entrance door per dwelling"
+    },
+    {
+      "row": 523,
+      "quantity": 5,
+      "basis": "One 900 mm external door per dwelling"
+    },
+    {
+      "row": 526,
+      "quantity": 5,
+      "basis": "One garage shutter per dwelling; garage included in ground-floor footprint"
+    },
+    {
+      "row": 531,
+      "quantity": 30,
+      "basis": "Six 900 mm internal doors per dwelling"
+    },
+    {
+      "row": 534,
+      "quantity": 15,
+      "basis": "Three 750 mm internal doors per dwelling"
+    },
+    {
+      "row": 538,
+      "quantity": 160.65,
+      "basis": "Both faces of 45 internal door leaves; lining finish included in rate"
+    },
+    {
+      "row": 670,
+      "quantity": 3219.46,
+      "basis": "Internal face of external walls plus both faces of partitions, net of openings"
+    },
+    {
+      "row": 673,
+      "quantity": 400,
+      "basis": "400 m2 exposed lower-storey concrete soffits"
+    },
+    {
+      "row": 679,
+      "quantity": 2969.46,
+      "basis": "Net internal wall rendering less 250 m2 tiled wall finish"
+    },
+    {
+      "row": 682,
+      "quantity": 400,
+      "basis": "400 m2 lower-storey soffit skim"
+    },
+    {
+      "row": 687,
+      "quantity": 2969.46,
+      "basis": "Same net skimmed wall area; tiled areas excluded"
+    },
+    {
+      "row": 690,
+      "quantity": 400,
+      "basis": "400 m2 lower-storey painted concrete soffits"
+    },
+    {
+      "row": 696,
+      "quantity": 980.11,
+      "basis": "Net external wall area; one exterior face only"
+    },
+    {
+      "row": 699,
+      "quantity": 980.11,
+      "basis": "Same external rendered wall area"
+    },
+    {
+      "row": 702,
+      "quantity": 250,
+      "basis": "50 m2 tiled kitchen/bathroom wall finishes per dwelling"
+    },
+    {
+      "row": 720,
+      "quantity": 600,
+      "basis": "120 m2 ceramic floors per dwelling; total net floor area 152 m2 each"
+    },
+    {
+      "row": 723,
+      "quantity": 550,
+      "basis": "110 m ceramic skirting per dwelling, excluding door gaps and granite zones"
+    },
+    {
+      "row": 728,
+      "quantity": 85,
+      "basis": "17 m2 granite circulation floors per dwelling; excludes ceramic and garage areas"
+    },
+    {
+      "row": 731,
+      "quantity": 88,
+      "basis": "16 stair treads per dwelling x 1.10 m width"
+    },
+    {
+      "row": 734,
+      "quantity": 88,
+      "basis": "16 stair risers per dwelling x 1.10 m width"
+    },
+    {
+      "row": 737,
+      "quantity": 150,
+      "basis": "30 m granite skirting per dwelling, excluding ceramic zones"
+    },
+    {
+      "row": 744,
+      "quantity": 75,
+      "basis": "15 m2 garage floor finish per dwelling"
+    },
+    {
+      "row": 747,
+      "quantity": 685,
+      "basis": "Ceramic and granite floor areas: 120 + 17 m2 per dwelling"
+    },
+    {
+      "row": 750,
+      "quantity": 250,
+      "basis": "Backing to the 250 m2 wall tiling only"
+    },
+    {
+      "row": 766,
+      "quantity": 400,
+      "basis": "400 m2 top-storey plasterboard ceiling"
+    },
+    {
+      "row": 769,
+      "quantity": 600,
+      "basis": "120 m ceiling cornice per dwelling, after openings/untreated garage zones"
+    },
+    {
+      "row": 772,
+      "quantity": 400,
+      "basis": "400 m2 top-storey plasterboard ceiling painted"
+    },
+    {
+      "row": 775,
+      "quantity": 50,
+      "basis": "10 m2 horizontal eaves soffit per dwelling"
+    }
+  ],
+  "buildingTotal": 126513231.95,
+  "externalTotal": 123478500,
+  "totalWithSourceVat": 313190078.34
+}
