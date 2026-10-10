@@ -55,3 +55,17 @@ mode, the live webhook endpoint, and role permissions on the deployed site.
 Replace legal-page placeholders with approved text.
 
 Separate client/contractor/subcontractor organizations are not currently implemented. Project team access still uses the existing shared membership model.
+
+## Project letterheads
+
+Set the issuing company name, email, website and PNG/JPEG logo in New Project or Edit Details. Logos are resized before upload and stored with the project in Supabase. Exports use that company, including continuation pages and footers. Existing projects fall back to their contractor or client name until letterhead details are saved. The project_letterhead migration adds optional fields without replacing existing records.
+
+## Notification checks
+
+Project members receive contract changes, including their own changes, when Contract events is enabled. Active staff receive job updates and invoice-creation messages. Comments respect their separate preference and visibility rules. Saving waits for the email attempt; provider failure is logged without undoing the saved record. Failed change emails are not automatically retried.
+
+Administrators can open Settings and choose Send test email. Provider acceptance is not a guarantee of inbox delivery: check spam and Resend email logs. Production requires SMTP_HOST=smtp.resend.com, SMTP_PORT=587, SMTP_USER=resend, SMTP_PASS set to the Resend API key, SMTP_FROM=contact@aurumite.com and a verified sending domain. Redeploy after changing Vercel settings.
+
+## Tender submissions
+
+The public tender form accepts up to three drawings, one specification and one bill of quantities, with a 4 MB combined file limit. It handles non-JSON hosting errors and confirms success only after the API returns a saved tender ID. On receipt, the sender is automatically emailed an acknowledgement that their tender is under review; the internal enquiry email is sent separately. Larger files require a direct-to-storage upload flow, which is not yet implemented. Resend must be configured and its sending domain verified for these messages to be delivered.

@@ -39,6 +39,10 @@ export interface Project {
   contractType: ContractType
   clientName?: string
   contractorName?: string
+  companyName?: string | null
+  companyEmail?: string | null
+  companyWebsite?: string | null
+  companyLogo?: string | null
   startDate?: string
   endDate?: string
   contractValue?: number

@@ -13,6 +13,7 @@ import Input from '../../components/ui/Input'
 import Select from '../../components/ui/Select'
 import Textarea from '../../components/ui/Textarea'
 import EmptyState from '../../components/ui/EmptyState'
+import ProjectLetterheadFields, { emptyLetterhead } from '../../components/projects/ProjectLetterheadFields'
 import type { Project } from '../../types'
 import { format, parseISO } from 'date-fns'
 
@@ -59,6 +60,8 @@ function ProjectCard({ project }: { project: Project }) {
 }
 
 export default function ProjectsPage() {
+  const [letterhead, setLetterhead] = useState(emptyLetterhead)
+  const [logoBusy, setLogoBusy] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
   const queryClient = useQueryClient()
   const user = useAuthStore((s) => s.user)
@@ -74,11 +77,13 @@ export default function ProjectsPage() {
   const mutation = useMutation({
     mutationFn: (data: FormData) => createProject({
       ...data,
+      ...letterhead,
       contractValue: data.contractValue ? Number(data.contractValue) : undefined,
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] })
       setModalOpen(false)
+      setLetterhead(emptyLetterhead)
       reset()
     },
   })
@@ -136,10 +141,11 @@ export default function ProjectsPage() {
             <Input label="Contractor Name" placeholder="Aurum Civil Ltd" {...register('contractorName')} />
           </div>
           <Textarea label="Description" placeholder="Brief project overview…" rows={3} {...register('description')} />
+          <ProjectLetterheadFields value={letterhead} onChange={setLetterhead} onBusyChange={setLogoBusy} />
           {mutation.error && <p className="text-sm text-red-600">Failed to create project. Please try again.</p>}
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="ghost" onClick={() => { setModalOpen(false); reset() }}>Cancel</Button>
-            <Button type="submit" loading={isSubmitting || mutation.isPending}>Create Project</Button>
+            <Button type="submit" disabled={logoBusy} loading={isSubmitting || mutation.isPending}>Create Project</Button>
           </div>
         </form>
       </Modal>

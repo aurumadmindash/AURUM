@@ -207,16 +207,16 @@ router.post('/:projectId/comments',
       })
       await logAudit({ userId: req.user!.id, projectId, entityType: 'Comment', entityId: comment.id, action: 'CREATE', ipAddress: req.ip })
 
-      // Notify the rest of the project team (fire-and-forget)
-      prisma.project.findUnique({
+      // Finish notification delivery before Vercel ends the request.
+      await prisma.project.findUnique({
         where: { id: projectId },
-        include: { members: { include: { user: { select: { id: true, email: true, role: true, notifyComments: true } } } } },
+        include: { members: { include: { user: { select: { id: true, email: true, role: true, isActive: true, notifyComments: true } } } } },
       }).then(async (project) => {
         if (!project) return
         const recipients = project.members
           .filter((m) => m.user.id !== req.user!.id)
           // Respect each person's notification preference
-          .filter((m) => m.user.notifyComments)
+          .filter((m) => m.user.isActive && m.user.notifyComments)
           // A restricted comment must not leak through the notification email
           .filter((m) => visibility === 'EVERYONE' || m.role === 'ADMIN' || m.role === 'COMMERCIAL_MANAGER' || m.user.role === 'ADMIN')
           .map((m) => m.user.email)

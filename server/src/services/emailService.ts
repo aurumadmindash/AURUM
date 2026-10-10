@@ -4,18 +4,33 @@ import prisma from '../config/database'
 // SMTP provider. Production uses Resend (smtp.resend.com); local dev may use
 // anything else. Port 465 speaks implicit TLS; 587 uses STARTTLS, which needs
 // secure:false — so the flag is derived from the port, never hardcoded.
-const SMTP_PORT = Number(process.env.SMTP_PORT) || 587
-const transporter = nodemailer.createTransport({
+function mailTransport() {
+  const SMTP_PORT = Number(process.env.SMTP_PORT) || 587
+  return nodemailer.createTransport({
   host: process.env.SMTP_HOST || 'smtp.resend.com',
   port: SMTP_PORT,
   secure: SMTP_PORT === 465,
+  connectionTimeout: 10000,
+  greetingTimeout: 10000,
+  socketTimeout: 20000,
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
-})
+  })
+}
+const transporter = {
+  sendMail: (options: Parameters<ReturnType<typeof mailTransport>['sendMail']>[0]) => mailTransport().sendMail(options),
+}
 
-const emailConfigured = () => Boolean(process.env.SMTP_USER && process.env.SMTP_PASS)
+const emailConfigured = () => {
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASS || !process.env.SMTP_FROM) {
+    throw new Error('Email is not configured: set SMTP_USER, SMTP_PASS and SMTP_FROM in Vercel.')
+  }
+  return true
+}
+
+const escapeHtml = (value: string) => value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 
 // With Resend the SMTP username is the literal string "resend" and the password
 // is an API key, so the sender address cannot be derived from SMTP_USER.
@@ -210,19 +225,19 @@ export async function notifyContractEvent(opts: {
 
   const project = await prisma.project.findUnique({
     where: { id: opts.projectId },
-    include: { members: { include: { user: { select: { id: true, email: true, notifyContractEvents: true } } } } },
+    include: { members: { include: { user: { select: { id: true, email: true, isActive: true, notifyContractEvents: true } } } } },
   })
   if (!project) return
 
   const recipients = project.members
-    .filter((m) => m.user.id !== opts.excludeUserId && m.user.notifyContractEvents)
+    .filter((m) => m.user.id !== opts.excludeUserId && m.user.isActive && m.user.notifyContractEvents)
     .map((m) => m.user.email)
   if (recipients.length === 0) return
 
   const rows = opts.fields.map(([label, value]) => `
     <tr>
-      <td style="padding:6px 12px 6px 0;font-size:13px;color:#6B7280;white-space:nowrap">${label}</td>
-      <td style="padding:6px 0;font-size:13px;color:#0F1F4B;font-weight:bold">${value || '-'}</td>
+      <td style="padding:6px 12px 6px 0;font-size:13px;color:#6B7280;white-space:nowrap">${escapeHtml(label)}</td>
+      <td style="padding:6px 0;font-size:13px;color:#0F1F4B;font-weight:bold">${escapeHtml(value || '-')}</td>
     </tr>`).join('')
 
   await transporter.sendMail({
@@ -230,11 +245,11 @@ export async function notifyContractEvent(opts: {
     to: recipients.join(', '),
     subject: `${opts.heading}: ${opts.reference} - ${project.name}`,
     html: shell(`
-      <h3 style="color:#080F1C;font-size:18px;margin:0 0 4px">${opts.heading}</h3>
-      <p style="color:#6B7280;margin:0 0 16px;font-size:13px">${project.name}</p>
-      <p style="font-size:15px;color:#0F1F4B;font-weight:bold;margin:0 0 12px">${opts.subject}</p>
+      <h3 style="color:#080F1C;font-size:18px;margin:0 0 4px">${escapeHtml(opts.heading)}</h3>
+      <p style="color:#6B7280;margin:0 0 16px;font-size:13px">${escapeHtml(project.name)}</p>
+      <p style="font-size:15px;color:#0F1F4B;font-weight:bold;margin:0 0 12px">${escapeHtml(opts.subject)}</p>
       <table style="border-collapse:collapse">${rows}</table>
-      ${opts.note ? `<p style="color:#B45309;font-size:13px;margin-top:16px">${opts.note}</p>` : ''}
+      ${opts.note ? `<p style="color:#B45309;font-size:13px;margin-top:16px">${escapeHtml(opts.note)}</p>` : ''}
       <p style="margin-top:20px">
         <table role="presentation" cellspacing="0" cellpadding="0"><tr><td bgcolor="#B45309" style="border-radius:8px">
           <a href="${process.env.CLIENT_URL}" target="_blank" style="display:inline-block;padding:11px 26px;font-family:Arial,sans-serif;font-size:14px;font-weight:bold;color:#FFFFFF;text-decoration:none">Open Aurum</a>
@@ -308,12 +323,27 @@ export async function sendQuoteReceivedEmail(to: string, clientName: string, pro
   if (!emailConfigured()) return
   await transporter.sendMail({
     from: FROM(), to,
-    subject: 'Aurum Project Controls - We have received your project information',
+    subject: `Tender received - ${projectName} - Aurum`,
+    text: `Hi ${clientName},\n\nWe have received your tender submission for ${projectName}, including any documents you uploaded. Our team is reviewing your information and will contact you with the next steps, scope, programme and proposed fee.\n\nThank you,\nAurum Project Controls\ncontact@aurumite.com`,
     html: shell(`
-      <h3 style="color:#080F1C;font-size:20px;margin:0 0 8px">Thank you, ${clientName}</h3>
-      <p style="color:#475569;font-size:14px;line-height:1.6">We have received the information and documents for <strong>${projectName}</strong> and are reviewing them.</p>
+      <h3 style="color:#080F1C;font-size:20px;margin:0 0 8px">Your tender has been received</h3>
+      <p style="color:#475569;font-size:14px;line-height:1.6">Hi ${escapeHtml(clientName)}, thank you for sending your tender for <strong>${escapeHtml(projectName)}</strong>. We have received your information and any documents you uploaded. Our team is reviewing your submission.</p>
       <p style="color:#475569;font-size:14px;line-height:1.6">We will review the scope, programme and information supplied and come back to you with the agreed deliverables, programme and fixed fee.</p>
     `),
+  })
+}
+
+export async function notifyBusinessChange(heading: string, projectName: string, reference: string) {
+  emailConfigured()
+  const users = await prisma.user.findMany({
+    where: { isActive: true, notifyContractEvents: true, role: { in: ['ADMIN', 'COMMERCIAL_MANAGER'] } },
+    select: { email: true },
+  })
+  if (!users.length) return
+  await transporter.sendMail({
+    from: FROM(), to: users.map((user) => user.email).join(', '),
+    subject: `${heading} - ${projectName}`,
+    html: shell(`<h3>${escapeHtml(heading)}</h3><p>${escapeHtml(projectName)}</p><p>Reference: ${escapeHtml(reference)}</p><p>Open the Aurum Jobs dashboard to review the saved changes.</p>`),
   })
 }
 

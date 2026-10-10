@@ -47,6 +47,9 @@ const project = {
   clientName: 'BlueStone Infrastructure',
   contractorName: 'Apex Civil Engineering Ltd',
   contractType: 'NEC4',
+  companyName: 'Apex Civil Engineering Ltd',
+  companyEmail: 'projects@example.com',
+  companyWebsite: 'www.example.com',
 }
 
 const ew = {
@@ -70,6 +73,21 @@ const longNoticeContent =
 
 const main = async () => {
   await render('early-warning.pdf', (res: any) => generateEarlyWarningPDF(res, ew, project))
+  await render('logo-letterhead.pdf', (res: any) => generateEarlyWarningPDF(res, ew, {
+    ...project,
+    companyLogo: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+  }))
+  await render('long-early-warning.pdf', (res: any) => generateEarlyWarningPDF(res, {
+    ...ew, description: (ew.description + '\n\n').repeat(35),
+  }, project))
+  await render('large-risk-register.pdf', (res: any) => generateRiskRegisterPDF(res, Array.from({ length: 100 }, (_, index) => ({
+    riskId: `R-${index + 1}`, description: 'Long description of a construction risk requiring mitigation and commercial review. '.repeat(3),
+    probability: 3, costImpact: 10000, timeImpact: 7, status: 'OPEN', owner: 'Site manager',
+  })), project))
+  await render('oversized-risk.pdf', (res: any) => generateRiskRegisterPDF(res, [{
+    riskId: 'R-LONG', description: 'Construction risk review and mitigation. '.repeat(150),
+    probability: 3, status: 'OPEN', owner: 'Site manager',
+  }], project))
 
   await render('notice.pdf', (res: any) => generateNoticePDF(res, {
     noticeNumber: 'N-004', type: 'COMPENSATION_EVENT', title: 'Extension of Time - Groundwater',
@@ -117,7 +135,7 @@ const main = async () => {
     drawingCount: 3,
   }))
 
-  console.log(`\nAll six exports rendered successfully -> ${outDir}`)
+  console.log(`\nAll exports and pagination samples rendered successfully -> ${outDir}`)
 }
 
 main().catch((e) => { console.error('SMOKE FAILED:', e); process.exit(1) })

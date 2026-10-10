@@ -1,6 +1,5 @@
-﻿import PDFDocument from 'pdfkit'
+import PDFDocument from 'pdfkit'
 import { Response } from 'express'
-import { LOGO_BASE64 } from '../assets/logoBase64'
 
 const GOLD = '#B45309'
 const NAVY = '#0F1F4B'
@@ -38,16 +37,28 @@ function cleanValue(value: unknown): string {
   return s
 }
 
-const LOGO = Buffer.from(LOGO_BASE64, 'base64')
 
 type Doc = InstanceType<typeof PDFDocument>
+const continuationPages = new WeakSet<object>()
+const tableHeaders = new WeakMap<Doc, { cols: string[]; widths: number[] }>()
+
+function ensureSpace(doc: Doc, height: number) {
+  if (doc.y + height <= doc.page.height - 76) return
+  doc.addPage()
+}
 
 export interface ProjectMeta {
   name: string
   clientName?: string | null
   contractorName?: string | null
   contractType?: string | null
+  companyName?: string | null
+  companyEmail?: string | null
+  companyWebsite?: string | null
+  companyLogo?: string | null
 }
+
+const companyName = (project: ProjectMeta) => project.companyName || project.contractorName || project.clientName || project.name || 'Project correspondence'
 
 // Downloads are named after the project so they file correctly off-system:
 // "Extension-of-ARI-N-001.pdf"
@@ -67,22 +78,36 @@ const asMeta = (p: ProjectMeta | string): ProjectMeta => (typeof p === 'string' 
 // The project itself lives in the banner below. Returns the y position where
 // the project banner should begin.
 function addLetterhead(doc: Doc, project: ProjectMeta): number {
+  doc.on('pageAdded', () => {
+    const state = doc as Doc & { _font: { name: string }; _fontSize: number }
+    const font = state._font.name
+    const fontSize = state._fontSize
+    doc.page.margins.top = 74
+    addContinuationHeader(doc, project)
+    doc.font(font).fontSize(fontSize)
+  })
   const left = 40
   const right = doc.page.width - 40
 
-  try {
-    doc.image(LOGO, left, 34, { fit: [50, 50] })
-  } catch {
-    // A missing/corrupt logo must never break a contractual document
+  let hasLogo = false
+  if (project.companyLogo) {
+    try {
+      doc.image(Buffer.from(project.companyLogo.split(',')[1], 'base64'), left, 34, { fit: [60, 48], align: 'center', valign: 'center' })
+      hasLogo = true
+    } catch {
+      // Preserve the document if an older uploaded logo is corrupt.
+    }
   }
-
-  const textX = left + 62
-  doc.font('Helvetica-Bold').fontSize(19).fillColor(NAVY)
-    .text('AURUM', textX, 36, { lineBreak: false, characterSpacing: 2 })
+  const textX = left + (hasLogo ? 72 : 0)
+  const identityWidth = doc.page.width / 2 + 5 - textX
+  let identitySize = 18
+  doc.font('Helvetica-Bold').fontSize(identitySize)
+  while (doc.heightOfString(companyName(project), { width: identityWidth }) > 45 && identitySize > 10) doc.fontSize(--identitySize)
+  doc.fillColor(NAVY).text(companyName(project), textX, 36, { width: identityWidth })
+  const subtitleY = doc.y + 5
   doc.font('Helvetica').fontSize(8).fillColor(SLATE)
-    .text('PROJECT CONTROLS', textX, 57, { lineBreak: false, characterSpacing: 2.2 })
-  doc.font('Helvetica').fontSize(6.5).fillColor(MUTED)
-    .text('NEC DEADLINES, NEVER MISSED', textX, 70, { lineBreak: false, characterSpacing: 1.2 })
+    .text('PROJECT CORRESPONDENCE', textX, subtitleY, { width: identityWidth, characterSpacing: 1 })
+  let dividerY = Math.max(98, doc.y + 16)
 
   // Subtle vertical separator between identity and contact block
   const divX = doc.page.width / 2 + 20
@@ -91,17 +116,16 @@ function addLetterhead(doc: Doc, project: ProjectMeta): number {
   // Contact block - real platform details only, never invented ones (§15)
   const contactX = divX + 12
   doc.font('Helvetica').fontSize(7.8).fillColor(SLATE)
-  doc.text('contact@aurumite.com', contactX, 38, { width: right - contactX, align: 'right', lineBreak: false })
-  doc.text('www.aurumite.com', contactX, 50, { width: right - contactX, align: 'right', lineBreak: false })
-  doc.font('Helvetica').fontSize(7).fillColor(MUTED)
-  doc.text('NEC3 & NEC4 Contract Administration', contactX, 66, { width: right - contactX, align: 'right', lineBreak: false })
+  doc.text([project.companyEmail, project.companyWebsite].filter(Boolean).join('\n'), contactX, 38, { width: right - contactX, align: 'right', lineGap: 4 })
+  dividerY = Math.max(dividerY, doc.y + 14)
 
   // Double rule - the traditional letterhead divider
-  doc.moveTo(left, 98).lineTo(right, 98).lineWidth(2).strokeColor(NAVY).stroke()
-  doc.moveTo(left, 102).lineTo(right, 102).lineWidth(0.75).strokeColor(GOLD).stroke()
+  doc.moveTo(left, dividerY).lineTo(right, dividerY).lineWidth(2).strokeColor(NAVY).stroke()
+  doc.moveTo(left, dividerY + 4).lineTo(right, dividerY + 4).lineWidth(0.75).strokeColor(GOLD).stroke()
   doc.lineWidth(1)
 
-  return 114
+  doc.y = dividerY + 16
+  return doc.y
 }
 
 // Project information bar - full-width navy band directly under the
@@ -110,10 +134,16 @@ function addProjectBanner(doc: Doc, project: ProjectMeta): void {
   const left = 40
   const width = doc.page.width - 80
   const y = doc.y
-  const height = 56
+  const title = project.name || 'Project'
+  doc.font('Helvetica-Bold').fontSize(14)
+  const titleHeight = doc.heightOfString(title, { width: width - 28 })
+  const details = [project.clientName ? `Client: ${project.clientName}` : '', project.contractorName ? `Contractor: ${project.contractorName}` : '', project.contractType ? `Contract: ${project.contractType}` : ''].filter(Boolean).join('   |   ')
+  doc.font('Helvetica').fontSize(9)
+  const detailsHeight = details ? doc.heightOfString(details, { width: width - 28 }) : 0
+  const height = 24 + titleHeight + (detailsHeight ? detailsHeight + 8 : 0)
   doc.rect(left, y, width, height).fill(NAVY)
   doc.font('Helvetica-Bold').fontSize(14).fillColor('#FFFFFF')
-    .text(project.name || 'Project', left + 14, y + 9, { width: width - 28, lineBreak: false })
+    .text(title, left + 14, y + 12, { width: width - 28 })
   const line2 = [
     project.clientName ? `Client: ${project.clientName}` : '',
     project.contractorName ? `Contractor: ${project.contractorName}` : '',
@@ -121,15 +151,17 @@ function addProjectBanner(doc: Doc, project: ProjectMeta): void {
   ].filter(Boolean).join('    |    ')
   if (line2) {
     doc.font('Helvetica').fontSize(8.5).fillColor('#C7D2E8')
-      .text(line2, left + 14, y + 33, { width: width - 28, lineBreak: false })
+      .text(line2, left + 14, y + 12 + titleHeight + 8, { width: width - 28 })
   }
   doc.y = y + height + 16
 }
 
 // Simplified continuation header for page 2+ (§10) - never the full letterhead.
 function addContinuationHeader(doc: Doc, project: ProjectMeta, docType?: string, reference?: string): void {
+  if (continuationPages.has(doc.page)) return
+  continuationPages.add(doc.page)
   doc.font('Helvetica-Bold').fontSize(8.5).fillColor(NAVY)
-    .text('AURUM PROJECT CONTROLS', 40, 38, { lineBreak: false, characterSpacing: 1.2 })
+    .text(companyName(project), 40, 38, { width: doc.page.width - 80, height: 12, ellipsis: true })
   const line2 = [
     project.name || 'Project',
     docType,
@@ -147,18 +179,18 @@ function addContinuationHeader(doc: Doc, project: ProjectMeta, docType?: string,
 function addDocumentTitle(doc: Doc, title: string, reference?: string, y?: number): number {
   const top = y ?? doc.y
   doc.font('Helvetica-Bold').fontSize(23).fillColor(NAVY)
-    .text(title.toUpperCase(), 40, top, { width: doc.page.width - 80, characterSpacing: 1.2, lineBreak: false })
+    .text(title.toUpperCase(), 40, top, { width: doc.page.width - 80, characterSpacing: 1.2 })
 
   let next = doc.y + 6
   if (reference) {
     doc.font('Helvetica').fontSize(10.5).fillColor(SLATE)
-      .text(reference, 40, next, { width: doc.page.width - 80, lineBreak: false })
+      .text(reference, 40, next, { width: doc.page.width - 80 })
     next = doc.y + 5
   }
   doc.moveTo(40, next + 4).lineTo(76, next + 4).lineWidth(3).strokeColor(GOLD).stroke()
   doc.moveTo(40, next + 14).lineTo(doc.page.width - 40, next + 14).lineWidth(0.75).strokeColor(RULE).stroke()
   doc.lineWidth(1)
-  return next + 28
+  return next + 24
 }
 
 // Draws the footer on the CURRENT page. The bottom margin is temporarily
@@ -173,12 +205,12 @@ function drawFooter(doc: Doc, project: ProjectMeta, reference: string, pageNum: 
   doc.lineWidth(1)
   const now = new Date()
   doc.font('Helvetica').fontSize(7.4).fillColor(MUTED)
-    .text(`AURUM PROJECT CONTROLS  |  ${project.name}  |  ${reference}  |  Generated ${now.toLocaleDateString('en-GB')} ${now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`,
-      40, y - 4, { width: doc.page.width - 140, lineBreak: false })
+    .text(`${companyName(project)}  |  ${reference}  |  ${now.toLocaleDateString('en-GB')}`,
+      40, y - 4, { width: doc.page.width - 180, height: 12, ellipsis: true })
   doc.font('Helvetica').fontSize(7.4).fillColor(MUTED)
     .text(`Page ${pageNum} of ${pageCount}`, doc.page.width - 130, y - 4, { width: 90, align: 'right', lineBreak: false })
   doc.font('Helvetica').fontSize(6.5).fillColor(SLATE)
-    .text('SAFETY   |   QUALITY   |   INTEGRITY   |   DELIVERY', 40, y + 8, { lineBreak: false, characterSpacing: 1.2 })
+    .text(project.name, 40, y + 8, { width: doc.page.width - 80, height: 12, ellipsis: true })
 
   doc.page.margins.bottom = savedBottom
 }
@@ -196,14 +228,16 @@ function finalise(doc: Doc, project: ProjectMeta, reference: string) {
 }
 
 // Section heading: a bold label above a hairline rule (formal, not a colour bar)
-function sectionTitle(doc: Doc, text: string) {
+function sectionTitle(doc: Doc, text: string, requiredSpace = 70) {
+  tableHeaders.delete(doc)
+  ensureSpace(doc, requiredSpace)
   const y = doc.y
   doc.font('Helvetica-Bold').fontSize(12).fillColor(NAVY)
     .text(text.toUpperCase(), 40, y, { characterSpacing: 0.8 })
   const ruleY = doc.y + 5
   doc.moveTo(40, ruleY).lineTo(doc.page.width - 40, ruleY).lineWidth(0.75).strokeColor(RULE).stroke()
   doc.lineWidth(1)
-  doc.y = ruleY + 14
+  doc.y = ruleY + 10
   doc.fillColor(BODY)
 }
 
@@ -219,11 +253,12 @@ function fieldTable(doc: Doc, fields: Array<[string, string]>) {
   let rowHeights: number[] = []
   const drawRow = () => {
     if (row.length === 0) return
+    const h = Math.max(34, Math.max(...rowHeights) + 12)
+    ensureSpace(doc, h)
     const startY = doc.y
-    const h = Math.max(30, Math.max(...rowHeights) + 24)
     row.forEach(([label, value], i) => {
       const x = 40 + i * (colW + gap)
-      doc.font('Helvetica').fontSize(8).fillColor(MUTED)
+      doc.font('Helvetica').fontSize(9).fillColor(MUTED)
         .text(label, x, startY, { width: colW, lineBreak: false })
       doc.font('Helvetica-Bold').fontSize(10).fillColor(NAVY)
         .text(value, x, startY + 12, { width: colW, lineGap: 1.5 })
@@ -247,7 +282,6 @@ function fieldTable(doc: Doc, fields: Array<[string, string]>) {
 // bordered cells, naturally wrapping body text (§7). Text can never spill
 // outside a cell - the row grows to fit the wrapped content.
 function tableRow(doc: Doc, cols: string[], widths: number[], isHeader = false, y?: number) {
-  const startY = y ?? doc.y
   const pad = 5
   const font = isHeader ? 'Helvetica-Bold' : 'Helvetica'
   const size = isHeader ? 8.5 : 8.25
@@ -257,6 +291,42 @@ function tableRow(doc: Doc, cols: string[], widths: number[], isHeader = false, 
     doc.heightOfString(t, { width: widths[i] - pad * 2, lineGap: 1.5 }),
   )
   const rowH = Math.max(...textHeights) + (isHeader ? 10 : 9)
+  if (!isHeader && rowH > doc.page.height - 230) {
+    // Split exceptionally long cells across rows without dropping their text.
+    if (doc.y + 50 > doc.page.height - 76) {
+      doc.addPage()
+      const header = tableHeaders.get(doc)
+      if (header && header.widths.join(',') === widths.join(',')) tableRow(doc, header.cols, header.widths, true)
+    }
+    const splitHeight = Math.min(doc.page.height - 250, doc.page.height - 76 - doc.y - 12)
+    const first: string[] = []
+    const remaining: string[] = []
+    texts.forEach((text, index) => {
+      let low = 0
+      let high = text.length
+      while (low < high) {
+        const middle = Math.ceil((low + high) / 2)
+        if (doc.heightOfString(text.slice(0, middle), { width: widths[index] - pad * 2, lineGap: 1.5 }) <= splitHeight) low = middle
+        else high = middle - 1
+      }
+      if (low < text.length) {
+        const wordEnd = text.lastIndexOf(' ', low)
+        if (wordEnd > 0) low = wordEnd + 1
+      }
+      first.push(text.slice(0, low))
+      remaining.push(text.slice(low))
+    })
+    tableRow(doc, first, widths)
+    tableRow(doc, remaining, widths)
+    return
+  }
+  if (y === undefined && doc.y + rowH > doc.page.height - 76) {
+    doc.addPage()
+    const header = tableHeaders.get(doc)
+    if (!isHeader && header && header.widths.join(',') === widths.join(',')) tableRow(doc, header.cols, header.widths, true)
+  }
+  if (isHeader) tableHeaders.set(doc, { cols, widths })
+  const startY = y ?? doc.y
   const totalW = widths.reduce((a, b) => a + b, 0)
 
   if (isHeader) {
@@ -281,9 +351,10 @@ function tableRow(doc: Doc, cols: string[], widths: number[], isHeader = false, 
 
 // Signature block - what makes a notice read as a served contractual document
 function signatureBlock(doc: Doc) {
-  doc.moveDown(1.5)
-  sectionTitle(doc, 'Acknowledgement of Receipt')
-  const y = doc.y + 16
+  if (doc.y + 76 > doc.page.height - 68) doc.addPage()
+  doc.y += 8
+  sectionTitle(doc, 'Acknowledgement of Receipt', 50)
+  const y = doc.y + 12
   const colW = (doc.page.width - 80 - 30) / 3
   const labels = ['Signed', 'Name & Position', 'Date']
   labels.forEach((label, i) => {
@@ -319,7 +390,7 @@ export function generateEarlyWarningPDF(
     ['Date Required By', fmtDate(ew['dateRequired'])],
     ['Raised By', String(ew['raisedBy'] ?? '')],
     ['Assigned To', String(ew['assignedTo'] ?? '')],
-    ['NEC Clause', '15.1'],
+    ['NEC Clause', meta.contractType === 'NEC3' ? '16.1' : '15.1'],
   ])
 
   doc.moveDown(0.5)
@@ -334,14 +405,12 @@ export function generateEarlyWarningPDF(
 
   // Document control block (§12) - only real data; approval fields are never
   // invented for records the application does not hold.
-  if (doc.y > doc.page.height - 250) {
-    doc.addPage()
-    addContinuationHeader(doc, meta, 'Early Warning', ref)
-  }
+  doc.moveDown(0.8)
+  ensureSpace(doc, 185)
   sectionTitle(doc, 'Document Control')
-  const ctrlW = [110, 373]
+  const ctrlW = [125, doc.page.width - 205]
   tableRow(doc, ['Reference', ref], ctrlW)
-  tableRow(doc, ['Revision', '01'], ctrlW)
+  tableRow(doc, ['Export date', fmtDate(new Date())], ctrlW)
   tableRow(doc, ['Date Raised', fmtDate(ew['dateRaised'])], ctrlW)
   tableRow(doc, ['Prepared By', String(ew['raisedBy'] ?? '')], ctrlW)
   doc.moveDown(0.5)
@@ -401,14 +470,12 @@ export function generateNoticePDF(
       40, doc.y, { width: doc.page.width - 80 })
 
   // Document control block (§12) - only data the application actually holds
-  if (doc.y > doc.page.height - 250) {
-    doc.addPage()
-    addContinuationHeader(doc, meta, typeLabel, ref)
-  }
+  doc.moveDown(0.8)
+  ensureSpace(doc, 185)
   sectionTitle(doc, 'Document Control')
-  const ctrlW = [110, 373]
+  const ctrlW = [125, doc.page.width - 205]
   tableRow(doc, ['Reference', ref], ctrlW)
-  tableRow(doc, ['Revision', '01'], ctrlW)
+  tableRow(doc, ['Export date', fmtDate(new Date())], ctrlW)
   tableRow(doc, ['Date Issued', fmtDate(notice['dateIssued'])], ctrlW)
   tableRow(doc, ['Issued By', String(notice['issuedBy'] ?? '')], ctrlW)
   doc.moveDown(0.5)
@@ -447,11 +514,6 @@ export function generateRiskRegisterPDF(
       humanize(r['status']),
       String(r['owner'] ?? ''),
     ], widths)
-    if (doc.y > doc.page.height - 110) {
-      doc.addPage()
-      addContinuationHeader(doc, meta, 'Risk Register', `${risks.length} item(s)`)
-      tableRow(doc, cols, widths, true)
-    }
   })
 
   finalise(doc, meta, 'Risk Register')
@@ -493,11 +555,6 @@ export function generateCESummaryPDF(
       typeof val === 'number' ? fmtMoney(val) : '',
       humanize(ce['status']),
     ], widths)
-    if (doc.y > doc.page.height - 110) {
-      doc.addPage()
-      addContinuationHeader(doc, meta, 'Compensation Event Summary', `${ces.length} events`)
-      tableRow(doc, cols, widths, true)
-    }
   })
 
   finalise(doc, meta, 'CE Summary')

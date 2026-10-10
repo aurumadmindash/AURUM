@@ -97,6 +97,10 @@ model Project {
   contractType   ContractType @default(NEC4)
   clientName     String?
   contractorName String?
+  companyName    String?
+  companyEmail   String?
+  companyWebsite String?
+  companyLogo    String?
   startDate      DateTime?
   endDate        DateTime?
   contractValue  Float?

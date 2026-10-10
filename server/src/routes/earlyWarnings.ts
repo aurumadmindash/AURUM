@@ -94,9 +94,8 @@ router.post('/:projectId/early-warnings',
       })
       await logAudit({ userId: req.user!.id, projectId: req.params.projectId, entityType: 'EarlyWarning', entityId: ew.id, action: 'CREATE', ipAddress: req.ip })
 
-      notifyContractEvent({
+      await notifyContractEvent({
         projectId: req.params.projectId,
-        excludeUserId: req.user!.id,
         heading: 'Early Warning raised',
         reference: ew.ewNumber,
         subject: ew.title,

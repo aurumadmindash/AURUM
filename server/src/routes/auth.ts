@@ -6,9 +6,28 @@ import { body, validationResult } from 'express-validator'
 import prisma from '../config/database'
 import { authenticate, AuthRequest } from '../middleware/auth'
 import { logAudit } from '../services/auditService'
-import { sendPasswordResetEmail } from '../services/emailService'
+import { sendPasswordResetEmail, sendTestEmail } from '../services/emailService'
 
 const router = express.Router()
+const emailTestLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 5, standardHeaders: true, legacyHeaders: false, message: { message: 'Please wait before sending another test email.' } })
+
+router.post('/email-test', authenticate, emailTestLimiter, async (req: AuthRequest, res): Promise<void> => {
+  if (req.user!.role !== 'ADMIN') { res.status(403).json({ message: 'Administrator access required.' }); return }
+  try {
+    const result = await sendTestEmail(req.user!.email)
+    if (result.rejected.length || !result.accepted.length) throw new Error('Recipient rejected')
+    res.json({ message: 'The email provider accepted the test message. Check your inbox and spam folder.' })
+  } catch (error) {
+    console.error('Test email failed:', error)
+    const err = error as { code?: string; responseCode?: number }
+    const configured = Boolean(process.env.SMTP_USER && process.env.SMTP_PASS && process.env.SMTP_FROM)
+    const message = !configured ? 'Email is not configured. Add SMTP_USER, SMTP_PASS and SMTP_FROM in Vercel, then redeploy.'
+      : err.code === 'EAUTH' ? 'Resend authentication failed. Check SMTP_USER=resend and the API key in SMTP_PASS.'
+      : err.responseCode === 550 ? 'Resend rejected the message. Check that your sender domain is verified and the recipient is allowed.'
+      : 'The test email could not be sent. Check Resend email logs and the SMTP settings in Vercel.'
+    res.status(502).json({ message })
+  }
+})
 
 // Brute-force protection on credential endpoints
 const authLimiter = rateLimit({

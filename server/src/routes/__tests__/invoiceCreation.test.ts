@@ -2,13 +2,14 @@ import express from 'express'
 import { AddressInfo } from 'net'
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
-const db = vi.hoisted(() => ({ quoteRequest: { findUnique: vi.fn() },
+const db = vi.hoisted(() => ({ quoteRequest: { findUnique: vi.fn(), create: vi.fn() },
   invoiceSequence: { upsert: vi.fn() }, invoice: { create: vi.fn() } }))
 vi.mock('../../config/database', () => ({ default: db }))
 vi.mock('../../middleware/auth', () => ({ authenticate: (req: any, _res: any, next: () => void) => {
   req.user = { id: 'admin', role: 'ADMIN' }; next()
 } }))
-vi.mock('../../services/emailService', () => ({ sendQuoteReceivedEmail: vi.fn(), sendQuoteInternalEmail: vi.fn() }))
+vi.mock('../../services/emailService', () => ({ sendQuoteReceivedEmail: vi.fn().mockResolvedValue(undefined), sendQuoteInternalEmail: vi.fn().mockResolvedValue(undefined), notifyBusinessChange: vi.fn().mockResolvedValue(undefined) }))
+import { sendQuoteReceivedEmail } from '../../services/emailService'
 import router from '../business'
 
 const app = express()
@@ -25,6 +26,7 @@ afterAll(async () => { await new Promise<void>((resolve, reject) => server.close
 beforeEach(() => {
   vi.clearAllMocks()
   db.quoteRequest.findUnique.mockResolvedValue({ id: 'quote-a', name: 'Client', email: 'client@example.com', projectName: 'Project' })
+  db.quoteRequest.create.mockResolvedValue({ id: 'quote-a', name: 'Client', company: 'Company', email: 'client@example.com', projectName: 'Project', documents: [] })
   db.invoiceSequence.upsert.mockResolvedValue({ current: 1 })
   db.invoice.create.mockImplementation(async ({ data }: any) => data)
 })
@@ -48,5 +50,21 @@ describe('invoice amount validation', () => {
     const data = await response.json() as { total: number; accessToken: string }
     expect(data.total).toBe(12.01)
     expect(data.accessToken).toMatch(/^[a-f0-9-]{36}$/)
+  })
+})
+
+describe('tender acknowledgement', () => {
+  const submission = { name: 'Client', company: 'Company', email: 'client@example.com', projectName: 'Project', service: 'Tender support' }
+  const submit = (body: unknown) => fetch(`${origin}/api/business/quote-requests`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+  it('saves the tender and automatically emails its sender', async () => {
+    const response = await submit(submission)
+    expect(response.status).toBe(201)
+    expect(sendQuoteReceivedEmail).toHaveBeenCalledWith('client@example.com', 'Client', 'Project')
+    expect(((await response.json()) as { id: string }).id).toBe('quote-a')
+  })
+  it('rejects an invalid contact email before saving or sending', async () => {
+    expect((await submit({ ...submission, email: 'invalid' })).status).toBe(400)
+    expect(db.quoteRequest.create).not.toHaveBeenCalled()
+    expect(sendQuoteReceivedEmail).not.toHaveBeenCalled()
   })
 })

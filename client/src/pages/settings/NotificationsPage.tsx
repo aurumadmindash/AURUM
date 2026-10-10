@@ -5,6 +5,7 @@ import { getMe, updateNotificationPrefs, changePassword } from '../../api/auth'
 import { useToast } from '../../components/ui/Toast'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
+import api from '../../lib/apiClient'
 
 function Toggle({ checked, onChange, disabled }: { checked: boolean; onChange: (v: boolean) => void; disabled?: boolean }) {
   return (
@@ -78,6 +79,12 @@ export default function NotificationsPage() {
   const toast = useToast()
 
   const { data: me, isLoading } = useQuery({ queryKey: ['me'], queryFn: getMe })
+  const [emailResult, setEmailResult] = useState('')
+  const emailTest = useMutation({
+    mutationFn: () => api.post<{ message: string }>('/auth/email-test'),
+    onSuccess: (response) => setEmailResult(response.data.message),
+    onError: (error: unknown) => setEmailResult((error as { response?: { data?: { message?: string } } }).response?.data?.message || 'Could not send a test email.'),
+  })
 
   const mutation = useMutation({
     mutationFn: updateNotificationPrefs,
@@ -94,7 +101,7 @@ export default function NotificationsPage() {
       icon: FileWarning,
       title: 'Contract events',
       description:
-        'Early warnings raised, compensation events notified, notices issued, CE status changes, and the daily deadline digest. These are contractual - missing one can cost money.',
+        'Project, early warning, compensation event, notice, risk and document changes, including your own changes, plus daily deadline reminders. Staff also receive job updates and invoice creation notifications.',
       recommended: 'Recommended: keep on',
     },
     {
@@ -147,6 +154,12 @@ export default function NotificationsPage() {
       </div>
 
       <ChangePassword />
+      {me?.role === 'ADMIN' && <section className="mt-6 rounded-xl border border-slate-200 bg-white p-5">
+        <h2 className="text-sm font-semibold text-slate-800">Check email delivery</h2>
+        <p className="mt-1 text-xs text-slate-500">Send a test message to your account email to check the Resend connection.</p>
+        <Button className="mt-4" size="sm" loading={emailTest.isPending} onClick={() => { setEmailResult(''); emailTest.mutate() }}>Send test email</Button>
+        {emailResult && <p role="status" className={`mt-3 text-xs ${emailTest.isError ? 'text-red-600' : 'text-emerald-700'}`}>{emailResult}</p>}
+      </section>}
     </div>
   )
 }

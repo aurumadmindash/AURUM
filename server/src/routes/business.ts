@@ -4,10 +4,11 @@ import ExcelJS from 'exceljs'
 import { randomUUID } from 'crypto'
 import prisma from '../config/database'
 import { authenticate, AuthRequest } from '../middleware/auth'
-import { sendQuoteReceivedEmail, sendQuoteInternalEmail } from '../services/emailService'
+import { sendQuoteReceivedEmail, sendQuoteInternalEmail, notifyBusinessChange } from '../services/emailService'
 
 const router = express.Router()
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 25 * 1024 * 1024, files: 6 } })
+const MAX_QUOTE_UPLOAD = 4 * 1024 * 1024
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX_QUOTE_UPLOAD, files: 5, fields: 20, fieldSize: 64 * 1024 } })
 const serviceMap: Record<string, any> = {
   'Take-off': 'TAKE_OFF', Estimate: 'ESTIMATE', 'Tender support': 'TENDER_SUPPORT',
   'Commercial support': 'COMMERCIAL_SUPPORT', 'Bill of Quantities': 'BOQ', Variation: 'VARIATION', Valuation: 'VALUATION', Other: 'OTHER',
@@ -26,20 +27,31 @@ async function nextInvoiceNumber() {
 }
 
 // Public Layer 1 intake: this is the new front door for the business.
-router.post('/quote-requests', upload.fields([
+const receiveQuoteFiles = upload.fields([
   { name: 'drawings', maxCount: 3 },
   { name: 'specification', maxCount: 1 },
   { name: 'boq', maxCount: 1 },
-]), async (req, res): Promise<void> => {
+])
+router.post('/quote-requests', (req, res, next) => {
+  receiveQuoteFiles(req, res, (error) => {
+    if (!error) { next(); return }
+    const tooLarge = error instanceof multer.MulterError && error.code === 'LIMIT_FILE_SIZE'
+    res.status(tooLarge ? 413 : 400).json({ message: tooLarge ? 'Keep all documents under 4 MB in total.' : 'Upload up to three drawings, one specification and one bill of quantities.' })
+  })
+}, async (req, res): Promise<void> => {
   try {
     const { name, company, email, telephone, projectName, projectLocation, service, tenderDeadline, briefDescription } = req.body
     if (!name || !company || !email || !projectName || !service) {
       res.status(400).json({ message: 'Name, company, email, project name and service are required.' }); return
     }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email))) { res.status(400).json({ message: 'Enter a valid contact email address.' }); return }
+    if (tenderDeadline && !asDate(tenderDeadline)) { res.status(400).json({ message: 'Choose a valid tender deadline.' }); return }
     const normalizedService = serviceMap[service] || service
     if (!Object.values(serviceMap).includes(normalizedService)) { res.status(400).json({ message: 'Invalid service.' }); return }
 
     const files = req.files as Record<string, Express.Multer.File[]> | undefined
+    const uploadSize = Object.values(files || {}).flat().reduce((total, file) => total + file.size, 0)
+    if (uploadSize > MAX_QUOTE_UPLOAD) { res.status(413).json({ message: 'Keep all documents under 4 MB in total.' }); return }
     const quote = await prisma.quoteRequest.create({
       data: {
         name: String(name).trim(), company: String(company).trim(), email: String(email).trim().toLowerCase(),
@@ -54,10 +66,11 @@ router.post('/quote-requests', upload.fields([
       }, include: { documents: { select: { name: true, kind: true } } },
     })
 
-    await Promise.allSettled([
+    const emailResults = await Promise.allSettled([
       sendQuoteReceivedEmail(quote.email, quote.name, quote.projectName),
       sendQuoteInternalEmail({ id: quote.id, name: quote.name, company: quote.company, email: quote.email, projectName: quote.projectName, service: normalizedService, tenderDeadline: quote.tenderDeadline, documents: quote.documents.map(d => d.name) }),
     ])
+    emailResults.forEach((result) => { if (result.status === 'rejected') console.error('Quote email failed:', result.reason) })
     res.status(201).json({ id: quote.id, message: 'Your project information has been received and is now under review.' })
   } catch (e) {
     console.error(e); res.status(500).json({ message: 'We could not receive the submission. Please try again or email the project information.' })
@@ -85,6 +98,7 @@ router.patch('/quotes/:id', authenticate, async (req: AuthRequest, res): Promise
   if (data.requiredDelivery) data.requiredDelivery = asDate(data.requiredDelivery)
   if (data.fee !== undefined) data.fee = Number(data.fee)
   const quote = await prisma.quoteRequest.update({ where: { id: req.params.id }, data })
+  await notifyBusinessChange('Job updated', quote.projectName, quote.id).catch((error) => console.error('Job change email failed:', error))
   res.json(quote)
 })
 
@@ -104,6 +118,7 @@ router.post('/quotes/:id/invoice', authenticate, async (req: AuthRequest, res): 
     projectName: quote.projectName, description: String(req.body.description || `Aurum Project Controls - ${quote.projectName}`), amount,
     vatRate, vatAmount, total, dueDate: asDate(req.body.dueDate), notes: req.body.notes || null,
   } })
+  await notifyBusinessChange('Invoice created', invoice.projectName, invoice.invoiceNumber).catch((error) => console.error('Invoice email failed:', error))
   res.status(201).json(invoice)
 })
 

@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { getProject, addProjectMember, removeProjectMember, completeProject, reopenProject, updateProject } from '../../api/projects'
+import ProjectLetterheadFields, { emptyLetterhead } from '../../components/projects/ProjectLetterheadFields'
 import Input from '../../components/ui/Input'
 import Select from '../../components/ui/Select'
 import Textarea from '../../components/ui/Textarea'
@@ -53,6 +54,8 @@ export default function ProjectDetailPage() {
   const [editOpen, setEditOpen] = useState(false)
   // These details appear on every exported document's letterhead
   const [form, setForm] = useState({ name: '', clientName: '', contractorName: '', contractType: 'NEC4', description: '' })
+  const [letterhead, setLetterhead] = useState(emptyLetterhead)
+  const [logoBusy, setLogoBusy] = useState(false)
   const [inviteSuccess, setInviteSuccess] = useState('')
   const [inviteLink, setInviteLink] = useState('')
   const [inviteToken, setInviteToken] = useState('')
@@ -154,6 +157,7 @@ export default function ProjectDetailPage() {
 
   const editMutation = useMutation({
     mutationFn: () => updateProject(projectId!, {
+      ...letterhead,
       name: form.name,
       clientName: form.clientName || undefined,
       contractorName: form.contractorName || undefined,
@@ -171,6 +175,7 @@ export default function ProjectDetailPage() {
 
   const openEdit = () => {
     if (!project) return
+    setLetterhead({ companyName: project.companyName ?? '', companyEmail: project.companyEmail ?? '', companyWebsite: project.companyWebsite ?? '', companyLogo: project.companyLogo ?? null })
     setForm({
       name: project.name,
       clientName: project.clientName ?? '',
@@ -393,9 +398,10 @@ export default function ProjectDetailPage() {
             onChange={(e) => setForm({ ...form, contractType: e.target.value })}
           />
           <Textarea label="Description" rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+          <ProjectLetterheadFields value={letterhead} onChange={setLetterhead} onBusyChange={setLogoBusy} />
           <div className="flex justify-end gap-2 pt-1">
             <Button variant="ghost" onClick={() => setEditOpen(false)}>Cancel</Button>
-            <Button loading={editMutation.isPending} disabled={!form.name.trim()} onClick={() => editMutation.mutate()}>
+            <Button loading={editMutation.isPending} disabled={!form.name.trim() || logoBusy} onClick={() => editMutation.mutate()}>
               Save Changes
             </Button>
           </div>

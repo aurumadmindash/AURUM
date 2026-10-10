@@ -4,6 +4,7 @@ import { ArrowLeft, ArrowRight, Check, CheckCircle2, FileText, ShieldCheck, Uplo
 
 const heroImage = '/landing/aurum-hero-site.jpg'
 const uploadFields: [string, string, boolean][] = [['drawings', 'Drawings', true], ['specification', 'Specification', false], ['boq', 'Bill of Quantities', false]]
+const MAX_UPLOAD_BYTES = 4 * 1024 * 1024
 
 export default function RequestQuotePage() {
   const [files, setFiles] = useState<Record<string, File[]>>({})
@@ -11,16 +12,30 @@ export default function RequestQuotePage() {
   const [done, setDone] = useState(false)
   const [error, setError] = useState('')
   const submit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault(); setBusy(true); setError('')
+    e.preventDefault(); setError('')
+    const selectedFiles = Object.values(files).flat()
+    if (selectedFiles.reduce((total, file) => total + file.size, 0) > MAX_UPLOAD_BYTES) {
+      setError('Your documents exceed the 4 MB total upload limit. Please compress them or submit the tender details first and email larger documents to contact@aurumite.com.')
+      return
+    }
+    if ((files.drawings?.length ?? 0) > 3) { setError('Select up to three drawing files.'); return }
+    setBusy(true)
     const form = e.currentTarget
-    const data = new FormData(form)
-    Object.entries(files).forEach(([kind, list]) => list.forEach(f => data.append(kind, f)))
     try {
+      const data = new FormData(form)
+      Object.entries(files).forEach(([kind, list]) => list.forEach(f => data.append(kind, f)))
       const r = await fetch('/api/business/quote-requests', { method: 'POST', body: data })
-      const j = await r.json()
-      if (!r.ok) throw new Error(j.message || 'Submission failed')
+      if (r.status === 413) throw new Error('The upload is too large. Keep all documents under 4 MB in total, or submit the details without attachments.')
+      const raw = await r.text()
+      let j: { id?: string; message?: string } | undefined
+      try { j = JSON.parse(raw) } catch { /* Hosting errors may be plain text or HTML. */ }
+      if (!r.ok) throw new Error(j?.message || 'We could not submit your tender right now. Please try again or contact contact@aurumite.com.')
+      if (!j?.id) throw new Error('The server did not confirm receipt. Please contact contact@aurumite.com before submitting again.')
       setDone(true); window.scrollTo({ top: 0, behavior: 'smooth' })
-    } catch (err: any) { setError(err.message || 'Something went wrong.') } finally { setBusy(false) }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : ''
+      setError(err instanceof TypeError || /expected pattern/i.test(message) ? 'We could not submit your tender. Check your connection and try again, or contact contact@aurumite.com.' : message || 'Something went wrong. Please try again.')
+    } finally { setBusy(false) }
   }
   const filePicker = (kind: string) => (e: React.ChangeEvent<HTMLInputElement>) => setFiles(v => ({ ...v, [kind]: Array.from(e.target.files || []) }))
 
@@ -34,8 +49,8 @@ export default function RequestQuotePage() {
       <form onSubmit={submit} className="space-y-5">
         <section className="rounded-2xl border border-black/[.06] bg-white p-5 shadow-[0_8px_30px_rgba(15,31,75,.025)] sm:p-7"><div className="flex items-center gap-3"><div className="flex h-9 w-9 items-center justify-center rounded-xl bg-navy-900 text-amber-300"><FileText size={17}/></div><div><h3 className="font-display text-lg font-semibold">Your details</h3><p className="mt-0.5 text-xs text-slate-500">Who should we contact about this project?</p></div></div><div className="mt-6 grid gap-4 sm:grid-cols-2">{[['name','Your name','text'],['company','Company','text'],['email','Work email','email'],['telephone','Telephone','tel'],['projectName','Project name','text'],['projectLocation','Project location','text']].map(([n,l,t])=><label key={n} className="block text-xs font-bold text-slate-700">{l}{['name','company','email','projectName'].includes(n)&&<span className="ml-1 text-amber-700">*</span>}<input name={n} type={t} required={['name','company','email','projectName'].includes(n)} placeholder={n==='projectLocation'?'Town / site location':''} className="mt-2 w-full rounded-lg border border-slate-200 bg-surface-50 px-3.5 py-3 text-sm font-normal outline-none transition placeholder:text-slate-300 focus:border-amber-500 focus:bg-white focus:ring-4 focus:ring-amber-500/10"/></label>)}</div></section>
         <section className="rounded-2xl border border-black/[.06] bg-white p-5 shadow-[0_8px_30px_rgba(15,31,75,.025)] sm:p-7"><div className="flex items-center gap-3"><div className="flex h-9 w-9 items-center justify-center rounded-xl bg-navy-900 text-amber-300"><CheckCircle2 size={17}/></div><div><h3 className="font-display text-lg font-semibold">Tender information</h3><p className="mt-0.5 text-xs text-slate-500">Help us understand what you need and when.</p></div></div><div className="mt-6 grid gap-4 sm:grid-cols-2"><label className="block text-xs font-bold text-slate-700">Service required <span className="text-amber-700">*</span><select name="service" required className="mt-2 w-full rounded-lg border border-slate-200 bg-surface-50 px-3.5 py-3 text-sm font-normal outline-none focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10"><option value="">Choose a service</option><option>Take-off</option><option>Estimate</option><option>Tender support</option><option>Commercial support</option><option>Bill of Quantities</option><option>Variation</option><option>Valuation</option><option>Other</option></select></label><label className="block text-xs font-bold text-slate-700">Tender deadline<input name="tenderDeadline" type="date" className="mt-2 w-full rounded-lg border border-slate-200 bg-surface-50 px-3.5 py-3 text-sm font-normal outline-none focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10"/></label></div><label className="mt-5 block text-xs font-bold text-slate-700">Brief project description<textarea name="briefDescription" rows={5} placeholder="What needs measuring, estimating or supporting? Include any key trades, deadline or project requirements." className="mt-2 w-full resize-y rounded-lg border border-slate-200 bg-surface-50 px-3.5 py-3 text-sm font-normal leading-6 outline-none transition placeholder:text-slate-300 focus:border-amber-500 focus:bg-white focus:ring-4 focus:ring-amber-500/10"/></label></section>
-        <section className="rounded-2xl border border-black/[.06] bg-white p-5 shadow-[0_8px_30px_rgba(15,31,75,.025)] sm:p-7"><div className="flex items-center gap-3"><div className="flex h-9 w-9 items-center justify-center rounded-xl bg-navy-900 text-amber-300"><UploadCloud size={17}/></div><div><h3 className="font-display text-lg font-semibold">Project documents</h3><p className="mt-0.5 text-xs text-slate-500">Upload any drawings, specification or BoQ you have.</p></div></div><div className="mt-5 grid gap-3 sm:grid-cols-3">{uploadFields.map(([n,l,multi])=><label key={n} className="group cursor-pointer rounded-xl border border-dashed border-slate-300 bg-surface-50 p-4 transition hover:border-amber-500 hover:bg-amber-50/40"><div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white text-slate-500 shadow-sm transition group-hover:text-amber-700"><UploadCloud size={17}/></div><div className="mt-3 text-xs font-extrabold">{l}</div><div className="mt-1 break-words text-[10px] leading-4 text-slate-500">{files[String(n)]?.length ? files[String(n)].map(f=>f.name).join(', ') : 'Click to choose file'}</div><input type="file" className="hidden" multiple={Boolean(multi)} onChange={filePicker(String(n))}/></label>)}</div><p className="mt-4 text-[10px] leading-5 text-slate-500">Maximum 25 MB per file. If you have multiple drawings, you can select them together in the drawings upload.</p></section>
-        {error && <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">{error}</div>}
+        <section className="rounded-2xl border border-black/[.06] bg-white p-5 shadow-[0_8px_30px_rgba(15,31,75,.025)] sm:p-7"><div className="flex items-center gap-3"><div className="flex h-9 w-9 items-center justify-center rounded-xl bg-navy-900 text-amber-300"><UploadCloud size={17}/></div><div><h3 className="font-display text-lg font-semibold">Project documents</h3><p className="mt-0.5 text-xs text-slate-500">Upload any drawings, specification or BoQ you have.</p></div></div><div className="mt-5 grid gap-3 sm:grid-cols-3">{uploadFields.map(([n,l,multi])=><label key={n} className="group cursor-pointer rounded-xl border border-dashed border-slate-300 bg-surface-50 p-4 transition hover:border-amber-500 hover:bg-amber-50/40"><div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white text-slate-500 shadow-sm transition group-hover:text-amber-700"><UploadCloud size={17}/></div><div className="mt-3 text-xs font-extrabold">{l}</div><div className="mt-1 break-words text-[10px] leading-4 text-slate-500">{files[String(n)]?.length ? files[String(n)].map(f=>f.name).join(', ') : 'Click to choose file'}</div><input type="file" className="hidden" multiple={Boolean(multi)} onChange={filePicker(String(n))}/></label>)}</div><p className="mt-4 text-[10px] leading-5 text-slate-500">Maximum 4 MB across all documents, with up to three drawings. For larger files, submit the tender details first and contact us to arrange document delivery.</p></section>
+        {error && <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">{error}</div>}
         <div className="rounded-2xl bg-surface-100 p-5 sm:flex sm:items-center sm:justify-between sm:gap-6 sm:p-6"><p className="text-[10px] leading-5 text-slate-600">By submitting, you confirm the information is supplied to help Aurum prepare a quotation for your project.</p><button disabled={busy} className="mt-4 inline-flex w-full shrink-0 items-center justify-center gap-2 rounded-lg bg-navy-900 px-6 py-3.5 text-sm font-extrabold text-white transition hover:bg-navy-800 disabled:cursor-wait disabled:opacity-50 sm:mt-0 sm:w-auto">{busy?'Submitting…':'Submit for review'} {busy ? null : <ArrowRight size={16}/>}</button></div>
       </form></div>
     </main>

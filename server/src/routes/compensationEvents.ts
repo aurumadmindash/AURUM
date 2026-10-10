@@ -8,7 +8,7 @@ import { authenticate, AuthRequest } from '../middleware/auth'
 import { requireProjectAccess, requireProjectRole } from '../middleware/roleCheck'
 import { logAudit, diffObjects } from '../services/auditService'
 import { nextNumber, createWithRetry } from '../services/numberingService'
-import { sendCEStatusChangeNotification, notifyContractEvent } from '../services/emailService'
+import { notifyContractEvent } from '../services/emailService'
 import { isValidTransition, replyDueFrom, quotationDueFrom, quoteReplyDueFrom } from '../services/necRules'
 
 // Files are stored IN the database (bytea) so they survive serverless deploys
@@ -99,9 +99,8 @@ router.post('/:projectId/compensation-events',
       })
       await logAudit({ userId: req.user!.id, projectId: req.params.projectId, entityType: 'CompensationEvent', entityId: ce.id, action: 'CREATE', ipAddress: req.ip })
 
-      notifyContractEvent({
+      await notifyContractEvent({
         projectId: req.params.projectId,
-        excludeUserId: req.user!.id,
         heading: 'Compensation Event notified',
         reference: ce.ceNumber,
         subject: ce.title,
@@ -170,17 +169,6 @@ router.put('/:projectId/compensation-events/:id',
       const statusChanged = existing.status !== ce.status
       await logAudit({ userId: req.user!.id, projectId: req.params.projectId, entityType: 'CompensationEvent', entityId: ce.id, action: statusChanged ? 'STATUS_CHANGE' : 'UPDATE', changes, ipAddress: req.ip })
 
-      if (statusChanged) {
-        // Notify project team of the workflow move (fire-and-forget)
-        prisma.project.findUnique({
-          where: { id: req.params.projectId },
-          include: { members: { include: { user: { select: { email: true } } } } },
-        }).then((project) => {
-          if (!project) return
-          const recipients = project.members.filter((m) => m.role !== 'VIEWER').map((m) => m.user.email)
-          return sendCEStatusChangeNotification(ce.ceNumber, ce.title, project.name, existing.status, ce.status, req.user!.email, recipients)
-        }).catch(console.error)
-      }
 
       res.json(ce)
     } catch {

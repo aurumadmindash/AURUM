@@ -72,9 +72,8 @@ router.post('/:projectId/notices',
       })
       await logAudit({ userId: req.user!.id, projectId: req.params.projectId, entityType: 'Notice', entityId: notice.id, action: 'CREATE', ipAddress: req.ip })
 
-      notifyContractEvent({
+      await notifyContractEvent({
         projectId: req.params.projectId,
-        excludeUserId: req.user!.id,
         heading: 'Notice issued',
         reference: notice.noticeNumber,
         subject: notice.title,

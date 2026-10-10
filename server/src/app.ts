@@ -47,7 +47,7 @@ app.use(cors({
 }))
 app.use(morgan('dev'))
 app.post('/api/business/stripe/webhook', express.raw({ type: 'application/json', limit: '1mb' }), stripeWebhook)
-app.use(express.json())
+app.use(express.json({ limit: '512kb' }))
 app.use(express.urlencoded({ extended: true }))
 
 // Global API rate limit (stricter per-endpoint limits live on the auth routes)

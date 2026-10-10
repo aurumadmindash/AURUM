@@ -4,6 +4,7 @@ import prisma from '../config/database'
 import { authenticate, AuthRequest } from '../middleware/auth'
 import { requireRole, requireProjectAccess, requireProjectRole } from '../middleware/roleCheck'
 import { logAudit } from '../services/auditService'
+import { readLetterhead, LetterheadValidationError } from '../services/projectLetterhead'
 
 const router = express.Router()
 
@@ -49,6 +50,7 @@ router.post('/',
       const project = await prisma.project.create({
         data: {
           name, description, contractType, clientName, contractorName,
+          ...readLetterhead(req.body),
           startDate: startDate ? new Date(startDate) : undefined,
           endDate: endDate ? new Date(endDate) : undefined,
           contractValue: contractValue ? Number(contractValue) : undefined,
@@ -57,7 +59,8 @@ router.post('/',
       })
       await logAudit({ userId: req.user!.id, projectId: project.id, entityType: 'Project', entityId: project.id, action: 'CREATE', ipAddress: req.ip })
       res.status(201).json(project)
-    } catch {
+    } catch (error) {
+      if (error instanceof LetterheadValidationError) { res.status(400).json({ message: error.message }); return }
       res.status(500).json({ message: 'Server error' })
     }
   },
@@ -95,12 +98,14 @@ router.put('/:projectId',
   async (req: AuthRequest, res): Promise<void> => {
     try {
       const { id, members, _count, createdAt, updatedAt, ...updateData } = req.body
+      Object.assign(updateData, readLetterhead(req.body))
       if (updateData.startDate) updateData.startDate = new Date(updateData.startDate)
       if (updateData.endDate) updateData.endDate = new Date(updateData.endDate)
       const project = await prisma.project.update({ where: { id: req.params.projectId }, data: updateData })
       await logAudit({ userId: req.user!.id, projectId: project.id, entityType: 'Project', entityId: project.id, action: 'UPDATE', ipAddress: req.ip })
       res.json(project)
-    } catch {
+    } catch (error) {
+      if (error instanceof LetterheadValidationError) { res.status(400).json({ message: error.message }); return }
       res.status(500).json({ message: 'Server error' })
     }
   },
