@@ -52,23 +52,27 @@ router.post('/quote-requests', (req, res, next) => {
     const files = req.files as Record<string, Express.Multer.File[]> | undefined
     const uploadSize = Object.values(files || {}).flat().reduce((total, file) => total + file.size, 0)
     if (uploadSize > MAX_QUOTE_UPLOAD) { res.status(413).json({ message: 'Keep all documents under 4 MB in total.' }); return }
+    const documents = Object.entries(files || {}).flatMap(([kind, list]) => (list || []).map(file => ({
+      kind, name: file.originalname, mimeType: file.mimetype, size: file.size, data: file.buffer,
+    })))
     const quote = await prisma.quoteRequest.create({
       data: {
         name: String(name).trim(), company: String(company).trim(), email: String(email).trim().toLowerCase(),
         telephone: telephone ? String(telephone).trim() : null, projectName: String(projectName).trim(),
         projectLocation: projectLocation ? String(projectLocation).trim() : null,
         service: normalizedService, tenderDeadline: asDate(tenderDeadline), briefDescription: briefDescription ? String(briefDescription).trim() : null,
-        documents: {
-          create: Object.entries(files || {}).flatMap(([kind, list]) => (list || []).map((f) => ({
-            kind, name: f.originalname, mimeType: f.mimetype, size: f.size, data: f.buffer,
-          }))),
-        },
+        documents: { create: documents },
       }, include: { documents: { select: { name: true, kind: true } } },
     })
 
     const emailResults = await Promise.allSettled([
       sendQuoteReceivedEmail(quote.email, quote.name, quote.projectName),
-      sendQuoteInternalEmail({ id: quote.id, name: quote.name, company: quote.company, email: quote.email, projectName: quote.projectName, service: normalizedService, tenderDeadline: quote.tenderDeadline, documents: quote.documents.map(d => d.name) }),
+      sendQuoteInternalEmail({
+        id: quote.id, name: quote.name, company: quote.company, email: quote.email,
+        telephone: quote.telephone, projectName: quote.projectName, projectLocation: quote.projectLocation,
+        service: normalizedService, tenderDeadline: quote.tenderDeadline,
+        briefDescription: quote.briefDescription, documents,
+      }),
     ])
     emailResults.forEach((result) => { if (result.status === 'rejected') console.error('Quote email failed:', result.reason) })
     res.status(201).json({ id: quote.id, message: 'Your project information has been received and is now under review.' })

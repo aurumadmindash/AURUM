@@ -348,25 +348,56 @@ export async function notifyBusinessChange(heading: string, projectName: string,
   })
 }
 
-export async function sendQuoteInternalEmail(opts: { id: string; name: string; company: string; email: string; projectName: string; service: string; tenderDeadline?: Date | null; documents: string[] }) {
+export async function sendQuoteInternalEmail(opts: {
+  id: string; name: string; company: string; email: string; telephone?: string | null;
+  projectName: string; projectLocation?: string | null; service: string; tenderDeadline?: Date | null;
+  briefDescription?: string | null;
+  documents: { name: string; kind: string; mimeType: string; data: Buffer }[];
+}) {
   if (!emailConfigured()) return
   const to = process.env.SALES_EMAIL || process.env.SMTP_FROM || process.env.SMTP_USER
   if (!to) return
+  const serviceNames: Record<string, string> = {
+    TAKE_OFF: 'Quantity take-off', ESTIMATE: 'Tender estimate', TENDER_SUPPORT: 'Tender support',
+    COMMERCIAL_SUPPORT: 'Commercial support', BOQ: 'Bill of Quantities', VARIATION: 'Variation', VALUATION: 'Valuation', OTHER: 'Other',
+  }
+  const kindNames: Record<string, string> = { drawings: 'Drawing', specification: 'Specification', boq: 'Bill of Quantities' }
+  const deadline = opts.tenderDeadline ? opts.tenderDeadline.toLocaleDateString('en-GB', { timeZone: 'UTC' }) : 'Not supplied'
+  const fields: [string, string][] = [
+    ['Client', opts.name], ['Company', opts.company], ['Email', opts.email],
+    ['Telephone', opts.telephone || 'Not supplied'], ['Project', opts.projectName],
+    ['Project location', opts.projectLocation || 'Not supplied'],
+    ['Service', serviceNames[opts.service] || opts.service], ['Tender deadline', deadline],
+  ]
+  const brief = opts.briefDescription || 'Not supplied'
+  const documentList = opts.documents.map(document => `${kindNames[document.kind] || document.kind}: ${document.name}`)
+  const jobUrl = `${(process.env.CLIENT_URL || 'https://aurumite.com').replace(/\/$/, '')}/jobs/${encodeURIComponent(opts.id)}`
   await transporter.sendMail({
     from: FROM(), to,
+    replyTo: opts.email,
     subject: `New Aurum quote request - ${opts.projectName}`,
+    text: [
+      'New project enquiry', ...fields.map(([label, value]) => `${label}: ${value}`),
+      '', 'Project description:', brief, '',
+      'Documents:', documentList.length ? documentList.join('\n') : 'None uploaded',
+      '', ...(documentList.length ? ['Uploaded documents are attached to this email.'] : []),
+      `Quote request ID: ${opts.id}`, `View saved submission: ${jobUrl}`,
+    ].join('\n'),
+    attachments: opts.documents.map(document => ({
+      filename: document.name.split(/[\\/]/).pop() || 'document',
+      content: document.data, contentType: document.mimeType,
+    })),
     html: shell(`
       <h3 style="color:#080F1C;font-size:20px;margin:0 0 12px">New project enquiry</h3>
       <table style="border-collapse:collapse;font-size:14px">
-        <tr><td style="padding:5px 18px 5px 0;color:#64748B">Client</td><td>${opts.name}</td></tr>
-        <tr><td style="padding:5px 18px 5px 0;color:#64748B">Company</td><td>${opts.company}</td></tr>
-        <tr><td style="padding:5px 18px 5px 0;color:#64748B">Email</td><td>${opts.email}</td></tr>
-        <tr><td style="padding:5px 18px 5px 0;color:#64748B">Project</td><td>${opts.projectName}</td></tr>
-        <tr><td style="padding:5px 18px 5px 0;color:#64748B">Service</td><td>${opts.service}</td></tr>
-        <tr><td style="padding:5px 18px 5px 0;color:#64748B">Tender deadline</td><td>${opts.tenderDeadline ? opts.tenderDeadline.toLocaleDateString('en-GB') : 'Not supplied'}</td></tr>
-        <tr><td style="padding:5px 18px 5px 0;color:#64748B">Documents</td><td>${opts.documents.length ? opts.documents.join(', ') : 'None'}</td></tr>
+        ${fields.map(([label, value]) => `<tr><td style="padding:5px 18px 5px 0;color:#64748B;vertical-align:top">${label}</td><td>${escapeHtml(value)}</td></tr>`).join('')}
       </table>
-      <p style="margin-top:18px;color:#64748B;font-size:12px">Quote request ID: ${opts.id}</p>
+      <h4 style="margin:20px 0 8px">Project description</h4>
+      <p style="font-size:14px;line-height:1.6">${escapeHtml(brief).replace(/\n/g, '<br>')}</p>
+      <h4 style="margin:20px 0 8px">Documents</h4>
+      ${documentList.length ? `<ul style="font-size:14px;line-height:1.6">${documentList.map(document => `<li>${escapeHtml(document)}</li>`).join('')}</ul><p style="font-size:14px">The uploaded files are attached to this email.</p>` : '<p style="font-size:14px">None uploaded.</p>'}
+      <p style="margin-top:18px;color:#64748B;font-size:12px">Quote request ID: ${escapeHtml(opts.id)}</p>
+      <p><a href="${escapeHtml(jobUrl)}" style="color:#0F1F4B">View the saved submission in Aurum Jobs</a></p>
     `),
   })
 }

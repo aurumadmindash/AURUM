@@ -3,13 +3,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const mocks = vi.hoisted(() => ({ sendMail: vi.fn(), createTransport: vi.fn(), project: vi.fn(), users: vi.fn() }))
 vi.mock('nodemailer', () => ({ default: { createTransport: mocks.createTransport } }))
 vi.mock('../../config/database', () => ({ default: { project: { findUnique: mocks.project }, user: { findMany: mocks.users } } }))
-import { notifyContractEvent, notifyBusinessChange, sendPasswordResetEmail, sendQuoteReceivedEmail } from '../emailService'
+import { notifyContractEvent, notifyBusinessChange, sendPasswordResetEmail, sendQuoteReceivedEmail, sendQuoteInternalEmail } from '../emailService'
 
 beforeEach(() => {
   vi.resetAllMocks()
   vi.stubEnv('SMTP_USER', 'resend')
   vi.stubEnv('SMTP_PASS', 'test-key')
   vi.stubEnv('SMTP_FROM', 'contact@aurumite.com')
+  vi.stubEnv('SALES_EMAIL', 'sales@aurumite.com')
+  vi.stubEnv('CLIENT_URL', 'https://aurumite.com')
   mocks.createTransport.mockReturnValue({ sendMail: mocks.sendMail })
   mocks.sendMail.mockResolvedValue({ accepted: ['owner@example.com'] })
 })
@@ -31,6 +33,37 @@ describe('project email delivery', () => {
     expect(message.text).toContain('Our team is reviewing')
     expect(message.html).toContain('Client &amp; team')
     expect(message.html).toContain('Your tender has been received')
+  })
+  it('sends all tender information and original file bytes to sales with a reply address', async () => {
+    const drawing = Buffer.from([0, 255, 10, 20])
+    const boq = Buffer.from('spreadsheet bytes')
+    await sendQuoteInternalEmail({
+      id: 'quote-1', name: 'Client & team', company: '<Company>', email: 'client@example.com',
+      telephone: '+44 1234 567890', projectName: 'Project', projectLocation: 'London & area',
+      service: 'TENDER_SUPPORT', tenderDeadline: new Date('2026-11-01T00:00:00Z'),
+      briefDescription: 'Full scope <details>\nSecond line', documents: [
+        { name: 'drawing.pdf', kind: 'drawings', mimeType: 'application/pdf', data: drawing },
+        { name: 'costs & quantities.xlsx', kind: 'boq', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', data: boq },
+      ],
+    })
+    const mail = mocks.sendMail.mock.calls[0][0]
+    expect(mail.to).toBe('sales@aurumite.com')
+    expect(mail.replyTo).toBe('client@example.com')
+    expect(mail.attachments).toEqual([
+      { filename: 'drawing.pdf', content: drawing, contentType: 'application/pdf' },
+      { filename: 'costs & quantities.xlsx', content: boq, contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' },
+    ])
+    for (const text of ['Client &amp; team', '&lt;Company&gt;', '+44 1234 567890', 'London &amp; area', 'Tender support', '01/11/2026', 'Full scope &lt;details&gt;<br>Second line', 'costs &amp; quantities.xlsx', 'https://aurumite.com/jobs/quote-1']) expect(mail.html).toContain(text)
+    expect(mail.text).toContain('Full scope <details>\nSecond line')
+    expect(mail.text).toContain('Telephone: +44 1234 567890')
+  })
+  it('handles tenders without files or optional details without claiming attachments', async () => {
+    await sendQuoteInternalEmail({ id: 'quote-1', name: 'Client', company: 'Company', email: 'client@example.com', projectName: 'Project', service: 'ESTIMATE', documents: [] })
+    const mail = mocks.sendMail.mock.calls[0][0]
+    expect(mail.attachments).toEqual([])
+    expect(mail.html).toContain('None uploaded')
+    expect(mail.html).toContain('Not supplied')
+    expect(mail.text).not.toContain('attached to this email')
   })
   it('restricts business notifications to active opted-in staff', async () => {
     mocks.users.mockResolvedValue([{ email: 'owner@example.com' }])

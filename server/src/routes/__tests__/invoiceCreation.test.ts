@@ -9,7 +9,7 @@ vi.mock('../../middleware/auth', () => ({ authenticate: (req: any, _res: any, ne
   req.user = { id: 'admin', role: 'ADMIN' }; next()
 } }))
 vi.mock('../../services/emailService', () => ({ sendQuoteReceivedEmail: vi.fn().mockResolvedValue(undefined), sendQuoteInternalEmail: vi.fn().mockResolvedValue(undefined), notifyBusinessChange: vi.fn().mockResolvedValue(undefined) }))
-import { sendQuoteReceivedEmail } from '../../services/emailService'
+import { sendQuoteReceivedEmail, sendQuoteInternalEmail } from '../../services/emailService'
 import router from '../business'
 
 const app = express()
@@ -61,6 +61,37 @@ describe('tender acknowledgement', () => {
     expect(response.status).toBe(201)
     expect(sendQuoteReceivedEmail).toHaveBeenCalledWith('client@example.com', 'Client', 'Project')
     expect(((await response.json()) as { id: string }).id).toBe('quote-a')
+  })
+  it('saves every uploaded document and forwards it with all form details to sales', async () => {
+    db.quoteRequest.create.mockImplementationOnce(async ({ data }: any) => ({ id: 'quote-a', ...data, documents: data.documents.create }))
+    const form = new FormData()
+    for (const [key, value] of Object.entries({ ...submission, telephone: '+44 12345678', projectLocation: 'London', tenderDeadline: '2026-11-01', briefDescription: 'Complete project scope' })) form.append(key, value)
+    const uploads = [
+      ['drawings', 'drawing-1.pdf', 'drawing one', 'application/pdf'],
+      ['drawings', 'drawing-2.pdf', 'drawing two', 'application/pdf'],
+      ['specification', 'specification.pdf', 'full specification', 'application/pdf'],
+      ['boq', 'boq.xlsx', 'bill of quantities', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
+    ]
+    for (const [field, filename, content, type] of uploads) form.append(field, new Blob([content], { type }), filename)
+    const response = await fetch(`${origin}/api/business/quote-requests`, { method: 'POST', body: form })
+    expect(response.status).toBe(201)
+    const saved = db.quoteRequest.create.mock.calls[0][0].data.documents.create
+    const internal = vi.mocked(sendQuoteInternalEmail).mock.calls[0][0]
+    expect(internal.documents).toEqual(saved)
+    expect(internal.documents).toHaveLength(4)
+    uploads.forEach(([kind, name, content, mimeType], index) => expect(internal.documents[index]).toEqual(expect.objectContaining({ kind, name, mimeType, data: Buffer.from(content) })))
+    expect(internal).toEqual(expect.objectContaining({ telephone: '+44 12345678', projectLocation: 'London', briefDescription: 'Complete project scope', service: 'TENDER_SUPPORT', tenderDeadline: new Date('2026-11-01') }))
+    expect(sendQuoteReceivedEmail).toHaveBeenCalledWith('client@example.com', 'Client', 'Project')
+  })
+  it('keeps a saved tender and sender acknowledgement when the sales email fails', async () => {
+    vi.mocked(sendQuoteInternalEmail).mockRejectedValueOnce(new Error('SMTP unavailable'))
+    const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      expect((await submit(submission)).status).toBe(201)
+      expect(db.quoteRequest.create).toHaveBeenCalled()
+      expect(sendQuoteReceivedEmail).toHaveBeenCalled()
+      expect(errorLog).toHaveBeenCalledWith('Quote email failed:', expect.any(Error))
+    } finally { errorLog.mockRestore() }
   })
   it('rejects an invalid contact email before saving or sending', async () => {
     expect((await submit({ ...submission, email: 'invalid' })).status).toBe(400)
