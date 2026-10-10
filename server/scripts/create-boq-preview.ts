@@ -28,11 +28,11 @@ async function main() {
   doc.moveDown(0.6).font('Helvetica-Bold').fillColor('#936500')
     .text('SAMPLE — FOR ILLUSTRATION ONLY')
   doc.moveDown(0.5).font('Helvetica').fillColor('#556174')
-    .text('Rates are illustrative source figures in NGN, not a current quotation. Quantities are unfilled in the source. CM = cubic metres; SM = square metres.')
+    .text('Rates and amounts are shown in pounds sterling (£). Pricing fields are left blank for this sample; this is not a quotation. CM = cubic metres; SM = square metres.')
   let y = doc.y + 18
   const widths = [30, 252, 43, 38, 64, 84]
   const xs = widths.map((_, index) => 42 + widths.slice(0, index).reduce((a, b) => a + b, 0))
-  const headings = ['Item', 'Description', 'Qty', 'Unit', 'Rate (NGN)', 'Amount (NGN)']
+  const headings = ['Item', 'Description', 'Qty', 'Unit', 'Rate (£)', 'Amount (£)']
   doc.rect(42, y, 511, 25).fill('#13234d')
   headings.forEach((text, i) => doc.fillColor('white').font('Helvetica-Bold').fontSize(8).text(text, xs[i] + 4, y + 8, { width: widths[i] - 8 }))
   y += 25
@@ -54,9 +54,8 @@ async function main() {
     doc.font('Helvetica').fontSize(9)
     const height = Math.max(30, doc.heightOfString(description, { width: widths[1] - 8 }) + 16)
     doc.rect(42, y, 511, height).fill(stripe++ % 2 ? '#f5f7fa' : '#ffffff')
-    const rate = Number(row.getCell(6).text)
     const values = [item, description, row.getCell(3).text || '—', row.getCell(5).text,
-      Number.isFinite(rate) ? rate.toLocaleString('en-GB') : '—', '—']
+      '—', '—']
     values.forEach((text, i) => doc.fillColor('#263247').font('Helvetica').fontSize(9).text(text, xs[i] + 4, y + 8, { width: widths[i] - 8 }))
     y += height
   }
