@@ -6,7 +6,7 @@ import { body, validationResult } from 'express-validator'
 import prisma from '../config/database'
 import { authenticate, AuthRequest } from '../middleware/auth'
 import { logAudit } from '../services/auditService'
-import { sendPasswordResetEmail, sendTestEmail } from '../services/emailService'
+import { sendAccountApprovalEmail, sendPasswordResetEmail, sendTestEmail } from '../services/emailService'
 
 const router = express.Router()
 const emailTestLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 5, standardHeaders: true, legacyHeaders: false, message: { message: 'Please wait before sending another test email.' } })
@@ -64,6 +64,7 @@ router.post('/register',
       })
 
       await logAudit({ userId: user.id, entityType: 'User', entityId: user.id, action: 'CREATE', changes: { status: { old: null, new: 'PENDING_APPROVAL' } }, ipAddress: req.ip })
+      await sendAccountApprovalEmail(user).catch(error => console.error('Account approval notification failed:', error))
       res.status(201).json({
         pendingApproval: true,
         message: 'Account created. An administrator must approve it before you can sign in.',

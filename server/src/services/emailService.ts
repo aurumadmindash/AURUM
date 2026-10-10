@@ -348,6 +348,39 @@ export async function notifyBusinessChange(heading: string, projectName: string,
   })
 }
 
+export async function sendAccountApprovalEmail(user: { id: string; name: string; email: string; createdAt: Date }) {
+  const admins = await prisma.user.findMany({
+    where: { role: 'ADMIN', isActive: true },
+    select: { email: true },
+  })
+  if (!admins.length) return
+  emailConfigured()
+  const reviewUrl = `${(process.env.CLIENT_URL || 'https://aurumite.com').replace(/\/$/, '')}/admin/users`
+  const registeredAt = user.createdAt.toISOString()
+  await transporter.sendMail({
+    from: FROM(), to: admins.map(admin => admin.email),
+    subject: `Account awaiting approval - ${user.name}`,
+    text: [
+      'A new account is awaiting administrator approval.', `Name: ${user.name}`, `Email: ${user.email}`,
+      `Registered (UTC): ${registeredAt}`, `Account reference: ${user.id}`,
+      '', 'This person cannot sign in until an administrator approves the account.',
+      `Review and approve in Aurum: ${reviewUrl}`,
+    ].join('\n'),
+    html: shell(`
+      <h3 style="color:#080F1C;font-size:20px;margin:0 0 12px">Account awaiting approval</h3>
+      <p style="font-size:14px;line-height:1.6">A new account has been created and requires administrator approval.</p>
+      <table style="border-collapse:collapse;font-size:14px">
+        <tr><td style="padding:5px 18px 5px 0;color:#64748B">Name</td><td>${escapeHtml(user.name)}</td></tr>
+        <tr><td style="padding:5px 18px 5px 0;color:#64748B">Email</td><td>${escapeHtml(user.email)}</td></tr>
+        <tr><td style="padding:5px 18px 5px 0;color:#64748B">Registered (UTC)</td><td>${registeredAt}</td></tr>
+        <tr><td style="padding:5px 18px 5px 0;color:#64748B">Account reference</td><td>${escapeHtml(user.id)}</td></tr>
+      </table>
+      <p style="font-size:14px;line-height:1.6">This person cannot sign in until an administrator approves the account.</p>
+      <p><a href="${escapeHtml(reviewUrl)}" style="color:#0F1F4B">Review the account in Aurum Users</a></p>
+    `),
+  })
+}
+
 export async function sendQuoteInternalEmail(opts: {
   id: string; name: string; company: string; email: string; telephone?: string | null;
   projectName: string; projectLocation?: string | null; service: string; tenderDeadline?: Date | null;

@@ -4,7 +4,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vites
 const mocks = vi.hoisted(() => ({ send: vi.fn() }))
 vi.mock('../../config/database', () => ({ default: {} }))
 vi.mock('../../services/auditService', () => ({ logAudit: vi.fn() }))
-vi.mock('../../services/emailService', () => ({ sendPasswordResetEmail: vi.fn(), sendTestEmail: mocks.send }))
+vi.mock('../../services/emailService', () => ({ sendAccountApprovalEmail: vi.fn(), sendPasswordResetEmail: vi.fn(), sendTestEmail: mocks.send }))
 vi.mock('../../middleware/auth', () => ({ authenticate: (req: any, _res: any, next: () => void) => {
   req.user = { id: 'owner', email: 'owner@example.com', role: req.headers['x-test-role'] || 'ADMIN' }; next()
 } }))

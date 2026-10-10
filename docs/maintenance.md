@@ -25,6 +25,12 @@ after configuration changes.
 Configure Resend SMTP in Vercel and verify the sending domain. Set SALES_EMAIL
 to the internal quote-enquiry inbox. Supabase SMTP is not used by this application.
 Test quote acknowledgement, internal enquiry mail, invitations and password reset.
+New self-registered accounts remain inactive until approved. Every active ADMIN
+receives an approval-request email with the person's name, email and a link to
+the Users page. These recipients come from administrator accounts in the database,
+not SALES_EMAIL or project-event notification preferences. Failed or duplicate
+signup attempts do not trigger approval emails, and mail failure leaves the new
+account safely pending approval.
 
 ## Payments
 

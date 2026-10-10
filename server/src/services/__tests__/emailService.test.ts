@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const mocks = vi.hoisted(() => ({ sendMail: vi.fn(), createTransport: vi.fn(), project: vi.fn(), users: vi.fn() }))
 vi.mock('nodemailer', () => ({ default: { createTransport: mocks.createTransport } }))
 vi.mock('../../config/database', () => ({ default: { project: { findUnique: mocks.project }, user: { findMany: mocks.users } } }))
-import { notifyContractEvent, notifyBusinessChange, sendPasswordResetEmail, sendQuoteReceivedEmail, sendQuoteInternalEmail } from '../emailService'
+import { notifyContractEvent, notifyBusinessChange, sendPasswordResetEmail, sendQuoteReceivedEmail, sendQuoteInternalEmail, sendAccountApprovalEmail } from '../emailService'
 
 beforeEach(() => {
   vi.resetAllMocks()
@@ -17,6 +17,25 @@ beforeEach(() => {
 })
 
 describe('project email delivery', () => {
+  it('alerts every active administrator to a pending account with a review link', async () => {
+    mocks.users.mockResolvedValue([{ email: 'admin-one@example.com' }, { email: 'admin-two@example.com' }])
+    await sendAccountApprovalEmail({ id: 'pending-1', name: 'New <user>', email: 'new@example.com', createdAt: new Date('2026-10-10T12:00:00Z') })
+    expect(mocks.users).toHaveBeenCalledWith({ where: { role: 'ADMIN', isActive: true }, select: { email: true } })
+    const message = mocks.sendMail.mock.calls[0][0]
+    expect(message.to).toEqual(['admin-one@example.com', 'admin-two@example.com'])
+    expect(message.subject).toContain('Account awaiting approval')
+    expect(message.html).toContain('New &lt;user&gt;')
+    expect(message.text).toContain('new@example.com')
+    expect(message.text).toContain('2026-10-10T12:00:00.000Z')
+    expect(message.text).toContain('cannot sign in until an administrator approves')
+    expect(message.html).toContain('https://aurumite.com/admin/users')
+    expect(message.text).not.toContain('password')
+  })
+  it('does not send a pending-account email when there are no active admins', async () => {
+    mocks.users.mockResolvedValue([])
+    await sendAccountApprovalEmail({ id: 'pending-1', name: 'New user', email: 'new@example.com', createdAt: new Date() })
+    expect(mocks.sendMail).not.toHaveBeenCalled()
+  })
   it.each([
     ['contact@aurumite.com', '"Aurum Project Controls" <contact@aurumite.com>'],
     ['Aurum <contact@aurumite.com>', 'Aurum <contact@aurumite.com>'],
