@@ -14,7 +14,7 @@ async function main() {
   const output = fs.createWriteStream(destination)
   const doc = new PDFDocument({ size: 'A4', layout: 'landscape', margin: 42, bufferPages: true,
     info: { Title: 'Aurum - Detailed Sample Bill of Quantities', Author: 'Aurum Project Controls',
-      Subject: 'Complete workbook content with illustrative dummy GBP pricing' } })
+      Subject: 'Complete workbook content with original rates and amounts in GBP' } })
   doc.pipe(output)
   const widths = [26, 350, 40, 34, 65, 80, 65, 98]
   const xs = widths.map((_, i) => 42 + widths.slice(0, i).reduce((a, b) => a + b, 0))
@@ -30,9 +30,9 @@ async function main() {
     doc.font('Helvetica-Bold').fontSize(16).fillColor('#13234d').text('AURUM PROJECT CONTROLS', 42, 30)
     doc.fontSize(12).text(`Sample Bill of Quantities | ${currentSheet}`, 42, 53, { width: totalWidth })
     doc.font('Helvetica').fontSize(8).fillColor('#556174').text(
-      'SAMPLE - FOR ILLUSTRATION ONLY. All pound prices are dummy examples, not converted source prices or a quotation. Original wording and quantities retained.',
+      'SAMPLE - FOR ILLUSTRATION ONLY. Original descriptions, quantities, rates and amounts retained from the supplied workbook. Currency: pounds sterling (£).',
       42, 75, { width: totalWidth })
-    doc.text('Summary figures are independent examples, not reconciled totals. Unavailable = a broken source formula. CM = cubic metres; SM = square metres.',
+    doc.text('Unavailable = a broken source formula. Source totals are preserved as supplied. CM = cubic metres; SM = square metres.',
       42, 91, { width: totalWidth })
     y = 112
     doc.rect(42, y, totalWidth, 26).fill('#13234d')
@@ -57,11 +57,10 @@ async function main() {
       // Ignore blank spacer rows that contain only zero-valued formulas.
       if (!original[0] && !original[1] && !original[2] && !original[3] && original.slice(4).every(value => !value || value === '0')) continue
       const values = [...original]
-      const rate = 25 + (index % 15) * 10
-      const quantity = Number(original[2]) > 0 ? Number(original[2]) : 10
       for (let column = 4; column < 8; column++) {
         if (!original[column] || original[column] === 'Unavailable') continue
-        const amount = Number(original[column]) === 0 ? 0 : column % 2 === 0 ? rate : rate * quantity
+        const amount = Number(original[column])
+        if (!Number.isFinite(amount)) continue
         values[column] = amount.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
       }
       const section = !values[0] && values.slice(2).every(value => !value)
