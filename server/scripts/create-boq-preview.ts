@@ -2,12 +2,14 @@ import ExcelJS from 'exceljs'
 import PDFDocument from 'pdfkit'
 import fs from 'fs'
 import path from 'path'
+import JSZip from 'jszip'
 
 // Render every populated workbook row as a public, watermarked sample.
 async function main() {
   if (!process.argv[2]) throw new Error('Provide the source BOQ workbook path.')
   const workbook = new ExcelJS.Workbook()
   await workbook.xlsx.readFile(process.argv[2])
+  const archive = await JSZip.loadAsync(fs.readFileSync(process.argv[2]))
   if (!workbook.worksheets.length) throw new Error('The workbook has no worksheets.')
   const destination = path.resolve('client/public/samples/boq-sample.pdf')
   fs.mkdirSync(path.dirname(destination), { recursive: true })
@@ -30,7 +32,7 @@ async function main() {
     doc.font('Helvetica-Bold').fontSize(16).fillColor('#13234d').text('AURUM PROJECT CONTROLS', 42, 30)
     doc.fontSize(12).text(`Sample Bill of Quantities | ${currentSheet}`, 42, 53, { width: totalWidth })
     doc.font('Helvetica').fontSize(8).fillColor('#556174').text(
-      'SAMPLE - FOR ILLUSTRATION ONLY. Original descriptions, quantities, rates and amounts retained from the supplied workbook. Currency: pounds sterling (£).',
+      'SAMPLE • FOR ILLUSTRATION ONLY. Original descriptions, quantities, rates and amounts retained from the supplied workbook. Currency: pounds sterling (£).',
       42, 75, { width: totalWidth })
     doc.text('Unavailable = a broken source formula. Source totals are preserved as supplied. CM = cubic metres; SM = square metres.',
       42, 91, { width: totalWidth })
@@ -39,20 +41,31 @@ async function main() {
     headings.forEach((text, i) => doc.fillColor('white').font('Helvetica-Bold').fontSize(8).text(text, xs[i] + 4, y + 8, { width: widths[i] - 8 }))
     y += 26
   }
-  function sourceText(cell: ExcelJS.Cell) {
+  function sourceText(cell: ExcelJS.Cell, cachedNumbers: Map<string, string>) {
+    // ExcelJS omits cached formula results of zero; retain the XML source values.
+    const cached = cachedNumbers.get(cell.address)
+    if (cached !== undefined) return cached
     if (cell.type === ExcelJS.ValueType.Merge || cell.value === null || cell.value === undefined) return ''
     if (cell.type === ExcelJS.ValueType.Error || /^#(REF!|VALUE!|DIV\/0!|NAME\?|N\/A|NUM!|NULL!)/.test(cell.text)) return 'Unavailable'
     if (typeof cell.value === 'object' && cell.value && 'result' in cell.value && typeof cell.value.result === 'object') return 'Unavailable'
-    return cell.text.trim()
+    return cell.text.trim().replace(/^[-–—_]+$/, '')
   }
   for (const sheet of workbook.worksheets) {
+    const xml = await archive.file(`xl/worksheets/sheet${workbook.worksheets.indexOf(sheet) + 1}.xml`)?.async('string')
+    const cachedNumbers = new Map<string, string>()
+    for (const match of (xml || '').matchAll(/<c\b([^>]*)(?<!\/)>([\s\S]*?)<\/c>/g)) {
+      if (/\bt="(?:s|e|str|inlineStr|b)"/.test(match[1])) continue
+      const address = /\br="([A-Z]+\d+)"/.exec(match[1])?.[1]
+      const value = /<v>([^<]+)<\/v>/.exec(match[2])?.[1]
+      if (address && value !== undefined && Number.isFinite(Number(value))) cachedNumbers.set(address, value)
+    }
     currentSheet = sheet.name
     startPage()
     let stripe = 0
     for (let index = 3; index <= sheet.rowCount; index++) {
       const row = sheet.getRow(index)
       const columns = [1, 2, 3, 5, 6, 7, 8, 9]
-      const original = columns.map(column => sourceText(row.getCell(column)))
+      const original = columns.map(column => sourceText(row.getCell(column), cachedNumbers))
       if (original.every(value => !value)) continue
       // Ignore blank spacer rows that contain only zero-valued formulas.
       if (!original[0] && !original[1] && !original[2] && !original[3] && original.slice(4).every(value => !value || value === '0')) continue
@@ -61,15 +74,18 @@ async function main() {
         if (!original[column] || original[column] === 'Unavailable') continue
         const amount = Number(original[column])
         if (!Number.isFinite(amount)) continue
-        values[column] = amount.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+        values[column] = amount === 0 ? '0' : amount.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
       }
       const section = !values[0] && values.slice(2).every(value => !value)
-      doc.font(section ? 'Helvetica-Bold' : 'Helvetica').fontSize(8.5)
-      const height = Math.max(23, ...values.map((text, column) => doc.heightOfString(text || ' ', { width: widths[column] - 8 }) + 12))
+      doc.font(section ? 'Helvetica-Bold' : 'Helvetica').fontSize(9.5)
+      const height = Math.max(26, ...values.map((text, column) => doc.heightOfString(text || ' ', { width: widths[column] - 8 }) + 14))
       if (y + height > doc.page.height - 58) startPage()
       doc.rect(42, y, totalWidth, height).fill(section ? '#e8edf5' : stripe++ % 2 ? '#f5f7fa' : '#ffffff')
-      values.forEach((text, column) => doc.fillColor('#263247').font(section ? 'Helvetica-Bold' : 'Helvetica').fontSize(8.5)
-        .text(text || (column >= 2 ? '—' : ''), xs[column] + 4, y + 6, { width: widths[column] - 8 }))
+      values.forEach((text, column) => {
+        if (!text) return
+        doc.fillColor('#263247').font(section ? 'Helvetica-Bold' : 'Helvetica').fontSize(9.5)
+          .text(text, xs[column] + 4, y + 7, { width: widths[column] - 8, align: column === 2 || column >= 4 ? 'right' : 'left' })
+      })
       y += height
       rowCount++
     }
@@ -78,10 +94,10 @@ async function main() {
   for (let page = 0; page < pages.count; page++) {
     doc.switchToPage(page)
     doc.page.margins.bottom = 0
-    doc.save().opacity(0.1).fillColor('#13234d').font('Helvetica-Bold').fontSize(74)
+    doc.save().opacity(0.055).fillColor('#13234d').font('Helvetica-Bold').fontSize(74)
       .rotate(-25, { origin: [421, 298] }).text('SAMPLE', 260, 265, { lineBreak: false }).restore()
     doc.fillColor('#64748b').font('Helvetica-Bold').fontSize(8)
-      .text(`SAMPLE - FOR ILLUSTRATION ONLY | Page ${page + 1} of ${pages.count}`, 42, doc.page.height - 35,
+      .text(`SAMPLE • FOR ILLUSTRATION ONLY | Page ${page + 1} of ${pages.count}`, 42, doc.page.height - 35,
         { width: totalWidth, align: 'center', lineBreak: false })
   }
   doc.end()
