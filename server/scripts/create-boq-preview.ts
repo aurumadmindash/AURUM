@@ -26,11 +26,10 @@ async function main() {
   let y = 0
   let rowCount = 0
   let firstPage = true
-  function startPage(showHeadings: boolean) {
+  function startPage() {
     if (!firstPage) doc.addPage()
     firstPage = false
     y = 42
-    if (!showHeadings) return
     doc.rect(42, y, totalWidth, 26).fill('#13234d')
     headings.forEach((text, i) => doc.fillColor('white').font('Helvetica-Bold').fontSize(8).text(text, xs[i] + 4, y + 8, { width: widths[i] - 8, align: alignment(i) }))
     y += 26
@@ -82,7 +81,7 @@ async function main() {
       else groups.push(group)
     }
     for (let groupIndex = 0; groupIndex < groups.length; groupIndex++) {
-      startPage(groupIndex === 0)
+      startPage()
       let fontSize = 9.5
       const sectionRow = (values: string[]) => !values[0] && values.slice(2).every(value => !value)
       const rowHeight = (values: string[]) => {
