@@ -26,18 +26,11 @@ async function main() {
   let y = 0
   let rowCount = 0
   let firstPage = true
-  let currentSheet = ''
-  function startPage() {
+  function startPage(showHeadings: boolean) {
     if (!firstPage) doc.addPage()
     firstPage = false
-    doc.font('Helvetica-Bold').fontSize(16).fillColor('#13234d').text('AURUM PROJECT CONTROLS', 42, 30)
-    doc.fontSize(12).text(`Sample Bill of Quantities | ${currentSheet}`, 42, 53, { width: totalWidth })
-    doc.font('Helvetica').fontSize(8).fillColor('#556174').text(
-      'SAMPLE • FOR ILLUSTRATION ONLY. Original descriptions, quantities, rates and amounts retained from the supplied workbook. Currency: pounds sterling (£).',
-      42, 75, { width: totalWidth })
-    doc.text('Unavailable = a broken source formula. Source totals are preserved as supplied. CM = cubic metres; SM = square metres.',
-      42, 91, { width: totalWidth })
-    y = 112
+    y = 42
+    if (!showHeadings) return
     doc.rect(42, y, totalWidth, 26).fill('#13234d')
     headings.forEach((text, i) => doc.fillColor('white').font('Helvetica-Bold').fontSize(8).text(text, xs[i] + 4, y + 8, { width: widths[i] - 8, align: alignment(i) }))
     y += 26
@@ -60,9 +53,8 @@ async function main() {
       const value = /<v>([^<]+)<\/v>/.exec(match[2])?.[1]
       if (address && value !== undefined && Number.isFinite(Number(value))) cachedNumbers.set(address, value)
     }
-    currentSheet = sheet.name
-    startPage()
-    let stripe = 0
+    const groups: string[][][] = []
+    let group: string[][] = []
     for (let index = 3; index <= sheet.rowCount; index++) {
       const row = sheet.getRow(index)
       const columns = [1, 2, 3, 5, 6, 7, 8, 9]
@@ -77,10 +69,33 @@ async function main() {
         if (!Number.isFinite(amount)) continue
         values[column] = amount === 0 ? '0' : amount.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
       }
-      const section = !values[0] && values.slice(2).every(value => !value)
-      doc.font(section ? 'Helvetica-Bold' : 'Helvetica').fontSize(9.5)
-      const height = Math.max(26, ...values.map((text, column) => doc.heightOfString(text || ' ', { width: widths[column] - 8 }) + 14))
-      if (y + height > doc.page.height - 58) startPage()
+      group.push(values)
+      // These rows are the workbook's bill-page endings, not collection references.
+      if (/PAGE\s+\d+\s*\/\s*\d+.*TO\s+(?:COLLECTION|SUMMARY)/i.test(values[1]) || /^(?:CARRIED\s+)?TO MAIN SUMMARY$/i.test(values[1])) {
+        groups.push(group)
+        group = []
+      }
+    }
+    if (group.length) {
+      // Trailing formula-only cells belong to the last source page.
+      if (groups.length && group.every(values => values.slice(0, 4).every(value => !value))) groups[groups.length - 1].push(...group)
+      else groups.push(group)
+    }
+    for (let groupIndex = 0; groupIndex < groups.length; groupIndex++) {
+      startPage(groupIndex === 0)
+      let fontSize = 9.5
+      const sectionRow = (values: string[]) => !values[0] && values.slice(2).every(value => !value)
+      const rowHeight = (values: string[]) => {
+        doc.font(sectionRow(values) ? 'Helvetica-Bold' : 'Helvetica').fontSize(fontSize)
+        return Math.max(fontSize + 12, ...values.map((text, column) => doc.heightOfString(text || ' ', { width: widths[column] - 8 }) + 12))
+      }
+      const rows = groups[groupIndex]
+      while (rows.reduce((sum, values) => sum + rowHeight(values), 0) > doc.page.height - 58 - y && fontSize > 7.5) fontSize -= 0.25
+      if (rows.reduce((sum, values) => sum + rowHeight(values), 0) > doc.page.height - 58 - y) throw new Error(`Source page ${groupIndex + 1} in ${sheet.name} does not fit. Adjust the layout before publishing.`)
+      let stripe = 0
+      for (const values of rows) {
+      const section = sectionRow(values)
+      const height = rowHeight(values)
       doc.rect(42, y, totalWidth, height).fill(section ? '#e8edf5' : stripe++ % 2 ? '#f5f7fa' : '#ffffff')
       if (!section) {
         doc.save().lineWidth(0.35).strokeColor('#d7dee8')
@@ -89,11 +104,12 @@ async function main() {
       }
       values.forEach((text, column) => {
         if (!text) return
-        doc.fillColor('#263247').font(section ? 'Helvetica-Bold' : 'Helvetica').fontSize(9.5)
-          .text(text, xs[column] + 4, y + 7, { width: widths[column] - 8, align: alignment(column) })
+        doc.fillColor('#263247').font(section ? 'Helvetica-Bold' : 'Helvetica').fontSize(fontSize)
+          .text(text, xs[column] + 4, y + 6, { width: widths[column] - 8, align: alignment(column) })
       })
       y += height
       rowCount++
+      }
     }
   }
   const pages = doc.bufferedPageRange()
@@ -103,7 +119,7 @@ async function main() {
     doc.save().opacity(0.055).fillColor('#13234d').font('Helvetica-Bold').fontSize(74)
       .rotate(-25, { origin: [421, 298] }).text('SAMPLE', 260, 265, { lineBreak: false }).restore()
     doc.fillColor('#64748b').font('Helvetica-Bold').fontSize(8)
-      .text(`SAMPLE • FOR ILLUSTRATION ONLY | Page ${page + 1} of ${pages.count}`, 42, doc.page.height - 35,
+      .text('SAMPLE • FOR ILLUSTRATION ONLY', 42, doc.page.height - 35,
         { width: totalWidth, align: 'center', lineBreak: false })
   }
   doc.end()
