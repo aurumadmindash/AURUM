@@ -22,6 +22,7 @@ async function main() {
   const xs = widths.map((_, i) => 42 + widths.slice(0, i).reduce((a, b) => a + b, 0))
   const totalWidth = widths.reduce((a, b) => a + b, 0)
   const headings = ['Item', 'Description', 'Qty', 'Unit', 'Rate (£)', 'Amount (£)', 'Alt. rate (£)', 'Alt. amount (£)']
+  const alignment = (column: number): 'left' | 'center' | 'right' => column === 3 ? 'center' : column === 2 || column >= 4 ? 'right' : 'left'
   let y = 0
   let rowCount = 0
   let firstPage = true
@@ -38,7 +39,7 @@ async function main() {
       42, 91, { width: totalWidth })
     y = 112
     doc.rect(42, y, totalWidth, 26).fill('#13234d')
-    headings.forEach((text, i) => doc.fillColor('white').font('Helvetica-Bold').fontSize(8).text(text, xs[i] + 4, y + 8, { width: widths[i] - 8 }))
+    headings.forEach((text, i) => doc.fillColor('white').font('Helvetica-Bold').fontSize(8).text(text, xs[i] + 4, y + 8, { width: widths[i] - 8, align: alignment(i) }))
     y += 26
   }
   function sourceText(cell: ExcelJS.Cell, cachedNumbers: Map<string, string>) {
@@ -81,10 +82,15 @@ async function main() {
       const height = Math.max(26, ...values.map((text, column) => doc.heightOfString(text || ' ', { width: widths[column] - 8 }) + 14))
       if (y + height > doc.page.height - 58) startPage()
       doc.rect(42, y, totalWidth, height).fill(section ? '#e8edf5' : stripe++ % 2 ? '#f5f7fa' : '#ffffff')
+      if (!section) {
+        doc.save().lineWidth(0.35).strokeColor('#d7dee8')
+        for (const x of [...xs, 42 + totalWidth]) doc.moveTo(x, y).lineTo(x, y + height).stroke()
+        doc.restore()
+      }
       values.forEach((text, column) => {
         if (!text) return
         doc.fillColor('#263247').font(section ? 'Helvetica-Bold' : 'Helvetica').fontSize(9.5)
-          .text(text, xs[column] + 4, y + 7, { width: widths[column] - 8, align: column === 2 || column >= 4 ? 'right' : 'left' })
+          .text(text, xs[column] + 4, y + 7, { width: widths[column] - 8, align: alignment(column) })
       })
       y += height
       rowCount++
