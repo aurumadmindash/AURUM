@@ -15,7 +15,7 @@ async function main() {
   fs.mkdirSync(path.dirname(destination), { recursive: true })
   const output = fs.createWriteStream(destination)
   const doc = new PDFDocument({ size: 'A4', layout: 'landscape', margin: 42, bufferPages: true,
-    info: { Title: 'Aurum - Detailed Sample Bill of Quantities', Author: 'Aurum Project Controls',
+    info: { Title: 'Detailed Sample Bill of Quantities',
       Subject: 'Complete workbook content with original rates and amounts in GBP' } })
   doc.pipe(output)
   const widths = [26, 350, 40, 34, 65, 80, 65, 98]
@@ -62,6 +62,9 @@ async function main() {
       // Ignore blank spacer rows that contain only zero-valued formulas.
       if (!original[0] && !original[1] && !original[2] && !original[3] && original.slice(4).every(value => !value || value === '0')) continue
       const values = [...original]
+      if (/\bDEVELOPMENT\b.*\b(?:MR|MRS|MISS|DR)\b/i.test(values[1])) {
+        values[1] = /\bRESIDENTIAL\b/i.test(values[1]) ? 'SAMPLE RESIDENTIAL DEVELOPMENT' : 'SAMPLE DEVELOPMENT'
+      }
       for (let column = 4; column < 8; column++) {
         if (!original[column] || original[column] === 'Unavailable') continue
         const amount = Number(original[column])
