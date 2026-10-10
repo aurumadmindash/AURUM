@@ -1,0 +1,164 @@
+{
+  "title": "Costed housing refurbishment basket",
+  "basis": "Published evaluation quantities; not measured quantities for a live project.",
+  "currency": "GBP",
+  "retrieved": "2026-10-10",
+  "sources": [
+    {
+      "id": "S1",
+      "url": "https://www.royalgreenwich.gov.uk/download/downloads/id/6245/united_living_-_pricing_schedules.xlsx",
+      "sha256": "bc0db67edeb2aa3f0c8492de952ed4381f35f0d62b3a063963b8f51cbe832492"
+    },
+    {
+      "id": "S2",
+      "url": "https://www.royalgreenwich.gov.uk/download/downloads/id/6246/axis_-_pricing_schedules.xlsx",
+      "sha256": "c854c6d35fd75945859c9a44663482c597de7fa12c7b0efeb63ae32e93fd4813"
+    }
+  ],
+  "items": [
+    {
+      "ref": "1.01",
+      "section": "Access",
+      "description": "Facade scaffolding; six-week hire",
+      "unit": "m2",
+      "quantity": 50.0,
+      "ratePence": 5131,
+      "alternativeRatePence": 3500,
+      "sourceSheet": 27,
+      "quantityCell": "E12",
+      "rateCell": "F12"
+    },
+    {
+      "ref": "1.02",
+      "section": "Access",
+      "description": "Tower scaffolding; maximum 10m",
+      "unit": "nr",
+      "quantity": 2.0,
+      "ratePence": 99670,
+      "alternativeRatePence": 25000,
+      "sourceSheet": 27,
+      "quantityCell": "E15",
+      "rateCell": "F15"
+    },
+    {
+      "ref": "2.01",
+      "section": "Building fabric",
+      "description": "Render renewal with existing removal",
+      "unit": "m2",
+      "quantity": 200.0,
+      "ratePence": 13289,
+      "alternativeRatePence": 3800,
+      "sourceSheet": 2,
+      "quantityCell": "D5",
+      "rateCell": "C5"
+    },
+    {
+      "ref": "2.02",
+      "section": "Building fabric",
+      "description": "Mechanical repointing with existing removal",
+      "unit": "m2",
+      "quantity": 100.0,
+      "ratePence": 5714,
+      "alternativeRatePence": 3800,
+      "sourceSheet": 2,
+      "quantityCell": "D7",
+      "rateCell": "C7"
+    },
+    {
+      "ref": "2.03",
+      "section": "Building fabric",
+      "description": "15mm exterior plywood roof decking",
+      "unit": "m2",
+      "quantity": 50.0,
+      "ratePence": 5845,
+      "alternativeRatePence": 5333,
+      "sourceSheet": 18,
+      "quantityCell": "D4",
+      "rateCell": "E4"
+    },
+    {
+      "ref": "2.04",
+      "section": "Building fabric",
+      "description": "200mm mineral-wool roof insulation",
+      "unit": "m2",
+      "quantity": 25.0,
+      "ratePence": 2658,
+      "alternativeRatePence": 2750,
+      "sourceSheet": 18,
+      "quantityCell": "D9",
+      "rateCell": "E9"
+    },
+    {
+      "ref": "3.01",
+      "section": "Renewals",
+      "description": "Kitchen renewal; six units maximum",
+      "unit": "nr",
+      "quantity": 10.0,
+      "ratePence": 702084,
+      "alternativeRatePence": 492000,
+      "sourceSheet": 7,
+      "quantityCell": "D4",
+      "rateCell": "E4"
+    },
+    {
+      "ref": "3.02",
+      "section": "Renewals",
+      "description": "WC renewal with hand basin",
+      "unit": "nr",
+      "quantity": 5.0,
+      "ratePence": 188820,
+      "alternativeRatePence": 59000,
+      "sourceSheet": 8,
+      "quantityCell": "D8",
+      "rateCell": "E8"
+    },
+    {
+      "ref": "4.01",
+      "section": "Electrical",
+      "description": "Additional double socket with box",
+      "unit": "nr",
+      "quantity": 10.0,
+      "ratePence": 7611,
+      "alternativeRatePence": 10500,
+      "sourceSheet": 19,
+      "quantityCell": "D25",
+      "rateCell": "C25"
+    },
+    {
+      "ref": "4.02",
+      "section": "Electrical",
+      "description": "Additional light switch with box",
+      "unit": "nr",
+      "quantity": 10.0,
+      "ratePence": 1649,
+      "alternativeRatePence": 2400,
+      "sourceSheet": 19,
+      "quantityCell": "D27",
+      "rateCell": "C27"
+    },
+    {
+      "ref": "4.03",
+      "section": "Electrical",
+      "description": "Additional smoke detector",
+      "unit": "nr",
+      "quantity": 20.0,
+      "ratePence": 16491,
+      "alternativeRatePence": 8204,
+      "sourceSheet": 19,
+      "quantityCell": "D36",
+      "rateCell": "C36"
+    },
+    {
+      "ref": "4.04",
+      "section": "Electrical",
+      "description": "Occupied-property electrical testing after works",
+      "unit": "nr",
+      "quantity": 20.0,
+      "ratePence": 16491,
+      "alternativeRatePence": 20000,
+      "sourceSheet": 20,
+      "quantityCell": "D4",
+      "rateCell": "C4"
+    }
+  ]
+}

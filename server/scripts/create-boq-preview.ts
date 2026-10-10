@@ -11,7 +11,7 @@ async function main() {
   await workbook.xlsx.readFile(process.argv[2])
   const archive = await JSZip.loadAsync(fs.readFileSync(process.argv[2]))
   if (!workbook.worksheets.length) throw new Error('The workbook has no worksheets.')
-  const destination = path.resolve('client/public/samples/boq-sample.pdf')
+  const destination = path.resolve('client/public/samples/boq-template-preview.pdf')
   fs.mkdirSync(path.dirname(destination), { recursive: true })
   const output = fs.createWriteStream(destination)
   const doc = new PDFDocument({ size: 'A4', layout: 'landscape', margin: 42, bufferPages: true,
