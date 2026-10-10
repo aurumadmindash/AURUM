@@ -3,7 +3,7 @@ import {
   ArrowDown, ArrowRight, ArrowUpRight, Check, CheckCircle2, Clock3, FileCheck2,
   FileSpreadsheet, HardHat, Menu, Ruler, Calculator, ClipboardCheck,
   Briefcase, Layers3, ShieldCheck, Sparkles, X, Building2, UploadCloud,
-  BadgePoundSterling, MoveRight,
+  MoveRight,
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
@@ -23,6 +23,10 @@ const services = [
   { icon: Briefcase, number: '04', title: 'Commercial support', text: 'Flexible support for valuations, variations, cost reporting and commercial administration.', image: media.commercial, tag: 'KEEP CONTROL' },
 ]
 const audiences = ['Building contractors', 'Fit-out & refurbishment', 'Joinery contractors', 'Groundworks', 'Roofing & decorating', 'Specialist subcontractors']
+const boqSamples = [
+  { id: '1', title: 'Refurbishment estimate', description: 'A priced example with published reference rates and a reconciled cost summary.', pages: 6, preview: 'boq-sample', workbook: 'boq-worked-sample' },
+  { id: '2', title: 'Five-dwelling bill of quantities', description: 'A detailed template with modelled quantities, supplied pound rates and a measurement basis.', pages: 32, preview: 'boq-client-completed', workbook: 'boq-client-completed' },
+]
 const process = [
   { number: '01', title: 'Send your drawings', text: 'Share drawings, specifications, scope and your tender deadline.' },
   { number: '02', title: 'Get a clear quotation', text: 'We review the scope and agree the fee, deliverables and programme.' },
@@ -32,12 +36,41 @@ const process = [
 
 export default function LandingPage() {
   const [open, setOpen] = useState(false)
+  const [navigation, setNavigation] = useState({ floating: false, visible: true })
   const { hash } = useLocation()
   useEffect(() => {
     if (hash) document.getElementById(hash.slice(1))?.scrollIntoView({ behavior: 'instant', block: 'start' })
   }, [hash])
-  return <div className="min-h-screen overflow-hidden bg-surface-50 text-navy-900 selection:bg-amber-300 selection:text-slate-950">
-    <header className="sticky top-0 z-50 border-b border-white/10 bg-navy-900/95 text-white backdrop-blur-xl">
+  useEffect(() => {
+    const mobile = window.matchMedia('(max-width: 1023px)')
+    let previousY = window.scrollY
+    let frame = 0
+    const update = () => {
+      frame = 0
+      const currentY = Math.max(0, window.scrollY)
+      if (!mobile.matches || currentY <= 96) {
+        previousY = currentY
+        setNavigation(previous => previous.floating ? { floating: false, visible: true } : previous)
+        return
+      }
+      if (Math.abs(currentY - previousY) < 8) return
+      const visible = currentY > previousY
+      previousY = currentY
+      setNavigation(previous => previous.floating && previous.visible === visible ? previous : { floating: true, visible })
+    }
+    const onScroll = () => { if (!frame) frame = window.requestAnimationFrame(update) }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    mobile.addEventListener('change', onScroll)
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      mobile.removeEventListener('change', onScroll)
+      window.cancelAnimationFrame(frame)
+    }
+  }, [])
+  const navigationVisible = !navigation.floating || navigation.visible || open
+  return <div className="min-h-screen overflow-x-clip bg-surface-50 text-navy-900 selection:bg-amber-300 selection:text-slate-950">
+    <div className="h-[77px] lg:h-auto">
+    <header {...(!navigationVisible ? { inert: '' } : {})} className={`z-50 border-b border-white/10 bg-navy-900/95 text-white backdrop-blur-xl transition-transform duration-200 motion-reduce:transition-none ${navigation.floating ? 'fixed inset-x-0 top-0 lg:relative' : 'relative'} ${navigationVisible ? 'translate-y-0' : '-translate-y-full pointer-events-none'}`}>
       <div className="mx-auto flex max-w-[1400px] items-center justify-between px-5 py-3.5 lg:px-10">
         <Link to="/" className="group flex items-center gap-3" aria-label="Aurum Project Controls home">
           <img src="/logo-light.png" alt="Aurum" className="h-12 w-12" />
@@ -45,10 +78,11 @@ export default function LandingPage() {
         </Link>
         <nav className="hidden items-center gap-7 text-[13px] font-medium text-white/75 lg:flex"><a className="transition hover:text-amber-300" href="#services">Services</a><a className="transition hover:text-amber-300" href="#how">How it works</a><a className="transition hover:text-amber-300" href="#pricing">Pricing</a><a className="transition hover:text-amber-300" href="#deliverables">Sample deliverables</a><a className="transition hover:text-amber-300" href="#about">About Aurum</a><a className="transition hover:text-amber-300" href="#contact">Contact</a></nav>
         <div className="hidden items-center gap-4 sm:flex"><span className="hidden text-xs text-white/50 xl:block">Estimating · Quantity surveying · Commercial</span><Link to="/request-quote" className="inline-flex items-center gap-2 rounded-lg bg-amber-400 px-4 py-2.5 text-xs font-extrabold text-navy-900 transition hover:-translate-y-0.5 hover:bg-amber-300">Send your drawings <ArrowUpRight size={15}/></Link></div>
-        <button className="rounded-lg border border-white/15 p-2 lg:hidden" onClick={() => setOpen(!open)} aria-label="Toggle navigation">{open ? <X size={21}/> : <Menu size={21}/>}</button>
+        <button type="button" className="rounded-lg border border-white/15 p-2 lg:hidden" onClick={() => setOpen(!open)} aria-label="Toggle navigation" aria-expanded={open} aria-controls="mobile-navigation">{open ? <X size={21}/> : <Menu size={21}/>}</button>
       </div>
-      {open && <div className="border-t border-white/10 bg-navy-900 px-5 py-5 lg:hidden"><nav className="grid gap-4 text-sm font-semibold"><a href="#services" onClick={() => setOpen(false)}>Services</a><a href="#how" onClick={() => setOpen(false)}>How it works</a><a href="#pricing" onClick={() => setOpen(false)}>Pricing</a><a href="#deliverables" onClick={() => setOpen(false)}>Sample deliverables</a><a href="#about" onClick={() => setOpen(false)}>About Aurum</a><a href="#contact" onClick={() => setOpen(false)}>Contact</a><Link to="/request-quote" className="mt-1 rounded-lg bg-amber-400 px-4 py-3 text-center text-navy-900">Send your drawings <ArrowRight className="ml-2 inline" size={16}/></Link></nav></div>}
+      {open && <div id="mobile-navigation" className="absolute inset-x-0 top-full max-h-[calc(100svh-77px)] overflow-y-auto border-t border-white/10 bg-navy-900 px-5 py-5 lg:hidden"><nav className="grid gap-4 text-sm font-semibold"><a href="#services" onClick={() => setOpen(false)}>Services</a><a href="#how" onClick={() => setOpen(false)}>How it works</a><a href="#pricing" onClick={() => setOpen(false)}>Pricing</a><a href="#deliverables" onClick={() => setOpen(false)}>Sample deliverables</a><a href="#about" onClick={() => setOpen(false)}>About Aurum</a><a href="#contact" onClick={() => setOpen(false)}>Contact</a><Link to="/request-quote" className="mt-1 rounded-lg bg-amber-400 px-4 py-3 text-center text-navy-900">Send your drawings <ArrowRight className="ml-2 inline" size={16}/></Link></nav></div>}
     </header>
+    </div>
 
     <main>
       {/* Cinematic hero: video is progressive enhancement; poster remains the fallback. */}
@@ -93,7 +127,37 @@ export default function LandingPage() {
 
       <section id="pricing" className="scroll-mt-20 bg-white px-5 py-16 sm:px-8 lg:px-10 lg:py-20"><div className="mx-auto grid max-w-[1400px] gap-8 rounded-2xl border border-black/[.06] bg-surface-50 p-6 sm:p-9 lg:grid-cols-[1fr_auto] lg:items-center lg:p-12"><div><p className="mb-3 text-[10px] font-extrabold uppercase tracking-[.22em] text-amber-800">Straightforward pricing</p><h2 className="font-display text-3xl font-semibold tracking-[-.04em] sm:text-4xl">Fixed-fee work. Agreed before we start.</h2><p className="mt-4 max-w-2xl text-sm leading-7 text-slate-600">Every project is different. We review the scope, the information supplied and your deadline, then provide a quotation setting out the deliverables, programme and fixed professional fee.</p><div className="mt-5 flex flex-wrap gap-3 text-[11px] font-bold text-slate-600"><span className="rounded-full bg-white px-3 py-2">Scope agreed</span><span className="rounded-full bg-white px-3 py-2">Programme confirmed</span><span className="rounded-full bg-white px-3 py-2">Fee confirmed</span></div><div className="mt-6 rounded-xl border border-amber-200 bg-white p-5"><h3 className="text-sm font-bold">Tender estimate</h3><p className="mt-2 text-3xl font-extrabold text-navy-900">£450–£800</p><p className="mt-2 text-sm leading-6 text-slate-600">Final fee agreed after reviewing your drawings, scope and deadline.</p></div></div><Link to="/request-quote" className="inline-flex items-center justify-center gap-2 rounded-lg bg-navy-900 px-5 py-4 text-sm font-extrabold text-white transition hover:bg-navy-800">Request a quotation <ArrowRight size={16}/></Link></div></section>
 
-      <section id="deliverables" className="scroll-mt-20 px-5 py-20 sm:px-8 lg:px-10 lg:py-24"><div className="mx-auto grid max-w-[1400px] gap-12 lg:grid-cols-[.85fr_1.15fr] lg:items-center"><div><p className="mb-4 flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[.22em] text-amber-700"><span className="h-px w-7 bg-amber-600"/> Clear, useful outputs</p><h2 className="font-display text-4xl font-semibold leading-tight tracking-[-.04em] sm:text-5xl">Documents your team can actually use.</h2><p className="mt-5 max-w-lg text-sm leading-7 text-slate-600">The exact deliverables are agreed in your quotation, based on the project scope and the information available.</p><div className="mt-8 grid gap-3 sm:grid-cols-2">{['Excel quantity take-off','PDF marked-up drawings','Tender estimate / pricing summary','Bill of Quantities','Assumptions & exclusions','Commercial registers and reports'].map(x=><div key={x} className="flex items-center gap-3 rounded-lg border border-black/[.07] bg-white px-3.5 py-3 text-xs font-semibold"><span className="flex h-6 w-6 items-center justify-center rounded-md bg-emerald-50 text-emerald-700"><Check size={13}/></span>{x}</div>)}</div><p className="mt-5 text-[11px] leading-5 text-slate-500">Illustrative deliverable types. Final scope depends on the agreed service.</p><a href="/boq-samples/1" className="mt-5 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-navy-900 px-5 py-3 text-sm font-bold text-white transition hover:bg-navy-800">View sample 1 BOQ <ArrowUpRight size={16}/><span className="sr-only"> (view pages online)</span></a><p className="mt-2 text-xs leading-5 text-slate-500">A fully costed worked example with published reference prices, checked calculations and a reconciled summary. For illustration only.</p><div className="mt-4 grid gap-3 text-sm font-semibold sm:flex sm:flex-wrap"><a href="/samples/boq-worked-sample.xlsx" download className="text-amber-800 underline underline-offset-4 hover:text-navy-900">Sample 1 calculation workbook (Excel)</a><a href="/boq-samples/2" className="inline-flex min-h-11 items-center justify-center rounded-lg bg-navy-900 px-5 py-3 text-white hover:bg-navy-800">View sample 2: five-dwelling BOQ<span className="sr-only"> (view pages online)</span></a><a href="/samples/boq-client-completed.xlsx" download className="text-amber-800 underline underline-offset-4 hover:text-navy-900">Sample 2 calculation workbook (Excel)</a></div><p className="mt-3 text-xs leading-5 text-slate-500">Sample 2 completes the five-dwelling template using modelled quantities and its supplied pound rates, with a quantity basis and checked totals.</p></div><div className="relative rounded-2xl bg-surface-200 p-4 sm:p-7"><div className="absolute right-7 top-7 flex items-center gap-2 rounded-full bg-white/85 px-3 py-2 text-[9px] font-extrabold uppercase tracking-[.14em] text-slate-600 shadow-sm"><FileSpreadsheet size={13} className="text-emerald-700"/> Sample output types</div><div className="grid gap-4 pt-12 sm:grid-cols-[1fr_.8fr]"><div className="rounded-xl bg-white p-4 shadow-lg shadow-slate-900/5"><div className="flex items-center gap-2 border-b border-slate-100 pb-3"><div className="rounded-md bg-emerald-50 p-2 text-emerald-700"><FileSpreadsheet size={18}/></div><div><div className="text-xs font-extrabold">Quantity take-off</div><div className="text-[9px] text-slate-400">Illustrative spreadsheet view</div></div></div><div className="mt-4 grid grid-cols-[1.1fr_.55fr_.55fr] gap-1 text-[8px] font-bold text-slate-500"><span>DESCRIPTION</span><span>UNIT</span><span>QTY</span></div>{[['Concrete foundations','m³','24.60'],['Blockwork','m²','118.40'],['Floor finish','m²','86.00'],['Plasterboard','m²','142.75'],['Skirting','m','48.20']].map((row, i)=><div key={row[0]} className={`mt-1 grid grid-cols-[1.1fr_.55fr_.55fr] gap-1 rounded px-2 py-2 text-[8px] ${i % 2 ? 'bg-slate-50' : 'bg-emerald-50/60'}`}><span className="font-medium text-slate-600">{row[0]}</span><span className="text-slate-500">{row[1]}</span><span className="font-bold text-slate-700">{row[2]}</span></div>)}<div className="mt-3 rounded-lg bg-slate-900 px-3 py-2 text-[9px] font-bold text-white">Structured · Traceable · Reviewable</div></div><div className="space-y-4"><div className="rounded-xl bg-white p-4 shadow-lg shadow-slate-900/5"><div className="flex items-center gap-2"><div className="rounded-md bg-amber-50 p-2 text-amber-700"><FileCheck2 size={17}/></div><div className="text-xs font-extrabold">Marked-up drawings</div></div><div className="relative mt-3 h-28 overflow-hidden rounded-lg bg-slate-100"><img src={media.takeoff} alt="Construction drawing review" loading="lazy" className="h-full w-full object-cover opacity-80"/><div className="absolute inset-0 bg-amber-300/10"/><div className="absolute left-[22%] top-[22%] h-12 w-16 border-2 border-amber-500"/><div className="absolute right-[18%] top-[40%] h-9 w-12 border-2 border-emerald-600"/><div className="absolute bottom-2 left-2 rounded bg-white/90 px-2 py-1 text-[8px] font-bold text-slate-700">Illustrative preview</div></div></div><div className="rounded-xl bg-amber-300 p-4"><div className="flex items-center gap-2"><BadgePoundSterling size={18}/><div className="text-xs font-extrabold">Fixed-fee proposal</div></div><p className="mt-2 text-[10px] leading-5 text-slate-800/75">Scope, deliverables, programme, fee and assumptions agreed before work begins.</p></div></div></div></div></div></section>
+      <section id="deliverables" className="scroll-mt-24 px-5 py-20 sm:px-8 lg:px-10 lg:py-24">
+        <div className="mx-auto max-w-[1400px]">
+          <div className="grid gap-8 lg:grid-cols-2 lg:items-end lg:gap-16">
+            <div>
+              <p className="mb-4 flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[.22em] text-amber-700"><span className="h-px w-7 bg-amber-600"/> Sample deliverables</p>
+              <h2 className="font-display text-4xl font-semibold leading-tight tracking-[-.04em] sm:text-5xl">See what your<br className="hidden sm:block"/> team receives.</h2>
+              <p className="mt-5 max-w-lg text-sm leading-7 text-slate-600">Explore our sample documents to see how quantities, pricing and project information are presented. Your deliverables are agreed around your project.</p>
+            </div>
+            <div className="grid gap-x-6 gap-y-4 sm:grid-cols-2">
+              {['Excel quantity take-off', 'Marked-up drawings', 'Tender estimate', 'Bill of Quantities', 'Assumptions & exclusions', 'Commercial reports'].map(item => <div key={item} className="flex items-center gap-3 text-xs font-semibold text-slate-600"><Check size={16} className="shrink-0 text-emerald-700"/>{item}</div>)}
+            </div>
+          </div>
+          <div className="mt-10 grid gap-6 md:grid-cols-2">
+            {boqSamples.map(sample => <article key={sample.id} className="flex flex-col overflow-hidden rounded-2xl border border-black/[.06] bg-white shadow-[0_8px_35px_rgba(15,31,75,.035)]">
+              <a href={`/boq-samples/${sample.id}`} aria-label={`View sample ${sample.id}: ${sample.title}`} className="block h-52 shrink-0 bg-surface-100 p-5 sm:h-64 sm:p-7">
+                <img src={`/samples/previews/${sample.preview}/page-1.webp`} alt={`First page of the ${sample.title.toLowerCase()} sample`} loading="lazy" width={1684} height={1190} className="h-full w-full rounded-md border border-slate-200 bg-white object-cover object-top shadow-sm"/>
+              </a>
+              <div className="flex flex-1 flex-col p-5 sm:p-7">
+                <p className="text-[10px] font-bold uppercase tracking-[.16em] text-amber-800">Sample {sample.id} <span className="mx-2 text-slate-300">/</span> {sample.pages} pages</p>
+                <h3 className="mt-3 font-display text-xl font-semibold sm:text-2xl">{sample.title}</h3>
+                <p className="mb-5 mt-3 text-sm leading-6 text-slate-600">{sample.description}</p>
+                <div className="mt-auto flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-slate-100 pt-5">
+                  <a href={`/boq-samples/${sample.id}`} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-navy-900 px-4 py-3 text-xs font-bold text-white transition hover:bg-navy-800" aria-label={`Read sample ${sample.id}`}>View sample <ArrowUpRight size={15}/></a>
+                  <a href={`/samples/${sample.workbook}.xlsx`} download className="inline-flex min-h-11 items-center gap-2 text-xs font-semibold text-slate-600 transition hover:text-amber-800" aria-label={`Download sample ${sample.id} Excel workbook`}><FileSpreadsheet size={16}/> Download Excel</a>
+                </div>
+              </div>
+            </article>)}
+          </div>
+          <p className="mt-5 text-xs leading-5 text-slate-500">Samples are for illustration only. Final scope and documents depend on the agreed service.</p>
+        </div>
+      </section>
 
       <section className="px-5 pb-20 sm:px-8 lg:px-10 lg:pb-24"><div className="mx-auto max-w-[1400px] overflow-hidden rounded-2xl bg-surface-200"><div className="grid lg:grid-cols-[.9fr_1.1fr]"><div className="p-7 sm:p-10 lg:p-14"><p className="mb-4 text-[11px] font-extrabold uppercase tracking-[.22em] text-amber-800">Who we support</p><h2 className="font-display text-3xl font-semibold leading-tight tracking-[-.04em] sm:text-4xl">Built for contractors of different sizes.</h2><p className="mt-4 text-sm leading-7 text-slate-600">Whether you need help with one tender or recurring commercial work, the scope can be shaped around your project.</p><div className="mt-7 grid gap-3 sm:grid-cols-2">{audiences.map(x=><div key={x} className="flex items-center gap-2 text-xs font-semibold"><HardHat size={15} className="shrink-0 text-amber-800"/>{x}</div>)}</div></div><div className="relative min-h-[300px] overflow-hidden lg:min-h-[450px]"><img src={media.hero} alt="Building construction project" loading="lazy" className="absolute inset-0 h-full w-full object-cover"/><div className="absolute inset-0 bg-gradient-to-r from-surface-200/30 via-transparent to-navy-900/30"/><div className="absolute bottom-6 left-6 rounded-xl border border-white/30 bg-navy-900/80 p-4 text-white backdrop-blur-md sm:bottom-9 sm:left-9"><Building2 size={20} className="text-amber-300"/><p className="mt-3 font-display text-xl font-semibold">Your next tender.<br/>A little more capacity.</p></div></div></div></div></section>
 
