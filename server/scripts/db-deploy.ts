@@ -34,20 +34,6 @@ const run = (cmd: string) => execSync(cmd, { stdio: 'inherit', env })
 // Prisma client generation has no DB dependency and must succeed.
 run('npx prisma generate')
 
-// Migrations + seed need valid DB credentials. If they fail, deploy the site
-// anyway — the schema already exists in most retry scenarios, and a live
-// /api/health/db endpoint gives a much faster credential-testing loop than
-// failing the whole build.
-try {
-  run('npx prisma migrate deploy')
-  run('npx tsx prisma/seed.ts')
-} catch {
-  console.warn('')
-  console.warn('⚠️  ============================================================')
-  console.warn('⚠️  DATABASE MIGRATION/SEED FAILED — continuing the build anyway.')
-  console.warn('⚠️  The site will deploy, but the API cannot reach the database')
-  console.warn('⚠️  until DATABASE_URL / DIRECT_URL credentials are fixed.')
-  console.warn('⚠️  After deploy, open /api/health/db to test credentials live.')
-  console.warn('⚠️  ============================================================')
-  console.warn('')
-}
+// Any migration or seed failure must stop deployment.
+run('npx prisma migrate deploy')
+run('npx tsx prisma/seed.ts')

@@ -34,9 +34,13 @@ Database → *Reset database password* if you don't have it).
 In your Vercel project → **Settings → General**:
 
 - **Root Directory** → set to the **repository root** (blank / `./`), **NOT `client`**.
-  This is what was wrong before — the old setup deployed only the frontend, so there was
-  no API and login could never work.
-- Framework Preset → **Other** (the included `vercel.json` handles the build).
+  The root `vercel.json` defines separate Vercel services for `client/` and `server/`.
+- Set the project-wide Framework Preset to **Services** (currently Beta).
+- Do not override the project-wide Build Command or Output Directory.
+  Framework and build settings are configured per service in `vercel.json`.
+- Public routing sends `/api/*` to the Express `server` service and all other paths
+  to the Vite `client` service. The client calls the API through same-origin `/api`
+  URLs, so no service binding or `VITE_API_URL` is needed.
 
 ## 3. Vercel — environment variables
 
@@ -45,10 +49,16 @@ In your Vercel project → **Settings → General**:
 | Name | Value |
 |------|-------|
 | `DATABASE_URL` | Supabase pooler URL from step 1 (with `?pgbouncer=true&connection_limit=1`) |
-| `DIRECT_URL` | Supabase direct URL (port 5432) |
+| `DIRECT_URL` | Supabase Session pooler URL (port 5432) |
 | `JWT_SECRET` | any long random string |
 | `CLIENT_URL` | your site URL, e.g. `https://www.aurumite.com` (no trailing slash) |
 | `CRON_SECRET` | any random string (protects the daily email job) |
+| `SEED_ADMIN_EMAIL` | your administrator email address |
+| `SEED_ADMIN_PASSWORD` | a strong password you choose before the first deployment |
+| `SEED_DEMO` | `false` for a clean production database |
+| `STRIPE_SECRET_KEY` | Stripe secret API key, if taking online payments |
+| `STRIPE_WEBHOOK_SECRET` | Signing secret for `/api/business/stripe/webhook` |
+| `SALES_EMAIL` | Internal inbox for quote enquiries |
 | `SMTP_HOST` `SMTP_PORT` `SMTP_USER` `SMTP_PASS` | Resend SMTP — see the Resend section below |
 | `SMTP_FROM` | the verified sender address, e.g. `notifications@aurumite.com` |
 
@@ -59,15 +69,38 @@ In your Vercel project → **Settings → General**:
 Push to the connected GitHub repo (or click **Redeploy**). On build, Vercel automatically:
 - installs dependencies and generates the Prisma client,
 - runs `prisma migrate deploy` against Supabase (creates all tables),
-- runs the seed (creates the admin user + demo project),
+- runs the seed (creates the admin user; demo content is opt-in),
 - builds the frontend.
 
 ## 5. Log in
 
-- **Email:** `admin@arlonecs.com`
-- **Password:** `ARLOTECH`
+Use the `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD` you set before the first deployment.
+The seed preserves an existing administrator password on redeploy. Changing the
+environment variable later does not reset that password. Development defaults
+are not permitted for production seeding.
 
-(Change this password in `server/prisma/seed.ts` before real launch — it's printed in build logs.)
+Production seeding now requires an explicit administrator email and a password
+of at least 12 characters. Migration and seed failures stop the build.
+
+## Online payments and private invoice links
+
+Configure a Stripe webhook at `https://<your-site>/api/business/stripe/webhook`
+for `checkout.session.completed` and `checkout.session.async_payment_succeeded`.
+Store that endpoint's signing secret as `STRIPE_WEBHOOK_SECRET` and configure
+`STRIPE_SECRET_KEY` in the same deployment. Checkout is disabled until both exist.
+Use test-mode credentials and a test webhook first; production uses separate
+live-mode credentials and its own endpoint signing secret.
+
+The `20261010090000_invoice_access` migration gives every invoice a private
+access token. Share the complete link from the Jobs dashboard, including its
+`#token=...` fragment. Old links containing only the invoice number no longer
+grant access; replace them with the new links. The token is a bearer credential:
+anyone with the complete link can view and pay that invoice.
+
+The return page and signed webhook check invoice identity, amount, currency,
+checkout mode and paid status before marking an invoice paid. Pre-update Stripe
+sessions lack invoice metadata: reconcile any payments already in progress before
+deploying, and issue fresh checkout links after the update where needed.
 
 ---
 
@@ -126,10 +159,7 @@ Also check **Resend → Logs** — failed sends appear there with the reason.
 
 ## Notes & limitations on serverless
 
-- **File uploads** (documents attached to CEs) write to Vercel's ephemeral `/tmp` and do
-  **not persist** between requests. Everything else (auth, EWs, risks, CEs, notices, PDFs,
-  exports, audit) works fully. For durable document storage, move uploads to Supabase
-  Storage — ask and I'll wire it up.
+- **File uploads** are stored as database bytes by the document and quote routes. Existing legacy files on a separate host must be migrated with their records. Test uploads on the deployed site, since hosting request-size limits also apply.
 - The daily NEC overdue-email job runs via **Vercel Cron** (configured in `vercel.json`,
   08:00 UTC) instead of an always-on timer.
 - Traditional hosting (Render/Railway/Docker) still works too — `server/src/index.ts`

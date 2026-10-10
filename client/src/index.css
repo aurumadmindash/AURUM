@@ -111,3 +111,9 @@
     animation: none;
   }
 }
+
+/* Landing-page motion is deliberately subtle and respects accessibility settings. */
+@media (prefers-reduced-motion: reduce) {
+  .landing-video { display: none; }
+  * { scroll-behavior: auto !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}

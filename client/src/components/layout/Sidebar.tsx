@@ -1,6 +1,6 @@
 import { NavLink, useParams } from 'react-router-dom'
 import {
-  LayoutDashboard, FolderOpen, AlertTriangle, ShieldAlert,
+  LayoutDashboard, FolderOpen, AlertTriangle, ShieldAlert, Briefcase,
   FileText, Bell, ClipboardList, GitBranch, Files, Users, Home, PencilRuler,
 } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
@@ -69,7 +69,7 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
       {/* Logo */}
       <div className="px-5 py-5 border-b border-white/5">
         <div className="flex items-center gap-0">
-          <img src="/logo.png" alt="Aurum" className="w-10 h-10 shrink-0" />
+          <img src="/logo-light.png" alt="Aurum" className="w-10 h-10 shrink-0" />
           <div className="min-w-0">
             <p className="text-white font-display font-bold text-base leading-none tracking-wide">AURUM</p>
             <p className="text-slate-400 font-display text-[10px] mt-1 truncate tracking-[0.18em] uppercase">Project Controls</p>
@@ -82,6 +82,7 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
         <SectionLabel>Main</SectionLabel>
         <NavItem to="/home" icon={LayoutDashboard} label="My Actions" />
         <NavItem to="/projects" icon={FolderOpen} label="Projects" end />
+        <NavItem to="/jobs" icon={Briefcase} label="Aurum Jobs" />
         {user?.role === 'ADMIN' && <NavItem to="/admin/users" icon={Users} label="User Management" />}
         <NavItem to="/settings/notifications" icon={Bell} label="Settings" />
         {projectId && <ProjectNav projectId={projectId} />}
@@ -91,7 +92,7 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
       <div className="px-5 py-4 border-t border-white/5">
         <div className="flex items-center gap-1.5">
           <span className="w-1.5 h-1.5 rounded-full bg-brand-green animate-pulse" />
-          <span className="text-xs text-slate-500">NEC3 / NEC4</span>
+          <span className="text-xs text-slate-500">Layer 1 · Layer 2 · Layer 3</span>
         </div>
       </div>
     </div>

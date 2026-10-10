@@ -34,6 +34,7 @@
     "node-cron": "^3.0.3",
     "nodemailer": "^6.9.8",
     "pdfkit": "^0.14.0",
+    "stripe": "^23.0.0",
     "uuid": "^9.0.0"
   },
   "devDependencies": {

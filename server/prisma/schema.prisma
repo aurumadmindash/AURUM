@@ -248,6 +248,106 @@ model Document {
   @@index([projectId, category])
 }
 
+enum QuoteService {
+  TAKE_OFF
+  ESTIMATE
+  TENDER_SUPPORT
+  COMMERCIAL_SUPPORT
+  BOQ
+  VARIATION
+  VALUATION
+  OTHER
+}
+
+enum QuoteStatus {
+  NEW
+  REVIEWING
+  QUOTED
+  ACCEPTED
+  IN_PROGRESS
+  COMPLETED
+  DECLINED
+}
+
+model QuoteRequest {
+  id                  String      @id @default(cuid())
+  name                String
+  company             String
+  email               String
+  telephone           String?
+  projectName         String
+  projectLocation     String?
+  service             QuoteService
+  tenderDeadline      DateTime?
+  briefDescription    String?
+  status              QuoteStatus @default(NEW)
+  requiredDelivery    DateTime?
+  fee                 Float?
+  notes               String?
+  clientRequirements  String?
+  requiredTrades      String?
+  missingInformation  String?
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+  documents           QuoteDocument[]
+  invoices            Invoice[]
+
+  @@index([status, tenderDeadline])
+  @@index([email])
+}
+
+model QuoteDocument {
+  id          String       @id @default(cuid())
+  quoteId     String
+  kind        String
+  name        String
+  mimeType    String
+  size        Int
+  data        Bytes
+  createdAt   DateTime     @default(now())
+  quote       QuoteRequest @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  @@index([quoteId])
+}
+
+model InvoiceSequence {
+  id      Int @id @default(1)
+  current Int @default(0)
+}
+
+model Invoice {
+  id             String       @id @default(cuid())
+  invoiceNumber  String       @unique
+  accessToken    String       @unique @default(uuid())
+  quoteId        String?
+  clientName     String
+  company        String?
+  email          String
+  projectName    String
+  description    String
+  amount         Float
+  vatRate        Float?
+  vatAmount      Float?
+  total          Float
+  currency       String       @default("GBP")
+  status         String       @default("UNPAID")
+  dueDate        DateTime?
+  paymentUrl     String?
+  stripeSession  String?
+  notes          String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  quote          QuoteRequest? @relation(fields: [quoteId], references: [id], onDelete: SetNull)
+
+  @@index([email, status])
+}
+
+model BusinessSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
 enum CommentTarget {
   PROJECT
   EARLY_WARNING

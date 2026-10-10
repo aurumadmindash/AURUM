@@ -52,7 +52,7 @@ function shell(inner: string): string {
   // fallback keeps the banner branded even in local dev (where CLIENT_URL is
   // localhost). Email clients block remote images until "show images" is
   // clicked, so the banner still reads fine without it.
-  const logoUrl = `${(process.env.CLIENT_URL || 'https://aurumite.com').replace(/\/$/, '')}/logo.png`
+  const logoUrl = `${(process.env.CLIENT_URL || 'https://aurumite.com').replace(/\/$/, '')}/logo-light.png`
   return `
     <div style="font-family:Inter,Arial,sans-serif;max-width:600px;margin:0 auto">
       <div style="background:#080F1C;padding:20px 24px;border-radius:8px 8px 0 0">
@@ -300,6 +300,42 @@ export async function sendPasswordResetEmail(email: string, name: string, token:
       <p style="color:#D1D5DB;font-size:11px;margin:8px 0 0">
         Or copy this link: ${resetUrl}
       </p>
+    `),
+  })
+}
+
+export async function sendQuoteReceivedEmail(to: string, clientName: string, projectName: string) {
+  if (!emailConfigured()) return
+  await transporter.sendMail({
+    from: FROM(), to,
+    subject: 'Aurum Project Controls - We have received your project information',
+    html: shell(`
+      <h3 style="color:#080F1C;font-size:20px;margin:0 0 8px">Thank you, ${clientName}</h3>
+      <p style="color:#475569;font-size:14px;line-height:1.6">We have received the information and documents for <strong>${projectName}</strong> and are reviewing them.</p>
+      <p style="color:#475569;font-size:14px;line-height:1.6">We will review the scope, programme and information supplied and come back to you with the agreed deliverables, programme and fixed fee.</p>
+    `),
+  })
+}
+
+export async function sendQuoteInternalEmail(opts: { id: string; name: string; company: string; email: string; projectName: string; service: string; tenderDeadline?: Date | null; documents: string[] }) {
+  if (!emailConfigured()) return
+  const to = process.env.SALES_EMAIL || process.env.SMTP_FROM || process.env.SMTP_USER
+  if (!to) return
+  await transporter.sendMail({
+    from: FROM(), to,
+    subject: `New Aurum quote request - ${opts.projectName}`,
+    html: shell(`
+      <h3 style="color:#080F1C;font-size:20px;margin:0 0 12px">New project enquiry</h3>
+      <table style="border-collapse:collapse;font-size:14px">
+        <tr><td style="padding:5px 18px 5px 0;color:#64748B">Client</td><td>${opts.name}</td></tr>
+        <tr><td style="padding:5px 18px 5px 0;color:#64748B">Company</td><td>${opts.company}</td></tr>
+        <tr><td style="padding:5px 18px 5px 0;color:#64748B">Email</td><td>${opts.email}</td></tr>
+        <tr><td style="padding:5px 18px 5px 0;color:#64748B">Project</td><td>${opts.projectName}</td></tr>
+        <tr><td style="padding:5px 18px 5px 0;color:#64748B">Service</td><td>${opts.service}</td></tr>
+        <tr><td style="padding:5px 18px 5px 0;color:#64748B">Tender deadline</td><td>${opts.tenderDeadline ? opts.tenderDeadline.toLocaleDateString('en-GB') : 'Not supplied'}</td></tr>
+        <tr><td style="padding:5px 18px 5px 0;color:#64748B">Documents</td><td>${opts.documents.length ? opts.documents.join(', ') : 'None'}</td></tr>
+      </table>
+      <p style="margin-top:18px;color:#64748B;font-size:12px">Quote request ID: ${opts.id}</p>
     `),
   })
 }

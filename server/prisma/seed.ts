@@ -12,12 +12,17 @@ const ADMIN_EMAIL = process.env.SEED_ADMIN_EMAIL || 'admin@aurum.com'
 const ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD || 'ARLOTECH'
 
 async function main() {
+  if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+    if (!process.env.SEED_ADMIN_EMAIL || !process.env.SEED_ADMIN_PASSWORD || process.env.SEED_ADMIN_PASSWORD.length < 12) {
+      throw new Error('Set SEED_ADMIN_EMAIL and a SEED_ADMIN_PASSWORD of at least 12 characters before production deployment.')
+    }
+  }
   // Sign-in requires a valid email address, so a malformed SEED_ADMIN_EMAIL
   // would create an account nobody can ever log into. Fail loudly instead.
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(ADMIN_EMAIL)) {
     console.error(`\nSEED_ADMIN_EMAIL is not a valid email address: "${ADMIN_EMAIL}"`)
     console.error('No admin account created. Fix the variable and redeploy.\n')
-    return
+    throw new Error('Invalid administrator email; seed aborted.')
   }
   // Ensure an admin exists so the platform is never locked out. The password is
   // only set when the account is first created — a password changed later by the
@@ -88,5 +93,5 @@ async function main() {
 }
 
 main()
-  .catch(console.error)
+  .catch(error => { console.error(error); process.exitCode = 1 })
   .finally(() => prisma.$disconnect())

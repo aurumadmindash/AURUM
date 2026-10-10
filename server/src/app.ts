@@ -20,6 +20,8 @@ import invitationRoutes, { publicRouter as publicInvitationRoutes } from './rout
 import commentRoutes from './routes/comments'
 import documentRoutes from './routes/documents'
 import myActionRoutes from './routes/myActions'
+import businessRoutes from './routes/business'
+import invoicePaymentRoutes, { stripeWebhook } from './routes/invoicePayments'
 import { sendOverdueNotifications } from './services/emailService'
 
 dotenv.config()
@@ -43,6 +45,7 @@ app.use(cors({
   credentials: true,
 }))
 app.use(morgan('dev'))
+app.post('/api/business/stripe/webhook', express.raw({ type: 'application/json', limit: '1mb' }), stripeWebhook)
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
@@ -71,6 +74,8 @@ app.use('/api/projects', invitationRoutes)
 app.use('/api/projects', commentRoutes)
 app.use('/api/projects', documentRoutes)
 app.use('/api/invitations', publicInvitationRoutes)
+app.use('/api/business', businessRoutes)
+app.use('/api/business', invoicePaymentRoutes)
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() })
@@ -84,12 +89,15 @@ app.get('/api/health/db', async (_req, res) => {
     await prisma.$queryRaw`SELECT 1`
     // Touch every table added by a migration so a half-applied schema shows up
     // here rather than as a mysterious 500 the first time a user clicks around.
-    const [users, comments, drawings] = await Promise.all([
+    const [users, comments, drawings, quotes, invoices] = await Promise.all([
       prisma.user.count(),
       prisma.comment.count(),
       prisma.document.count({ where: { category: 'DRAWING' } }),
+      prisma.quoteRequest.count(),
+      prisma.invoice.count(),
+      prisma.invoice.findFirst({ select: { accessToken: true } }),
     ])
-    res.json({ db: 'ok', schema: 'ok', seededUsers: users, comments, drawings })
+    res.json({ db: 'ok', schema: 'ok', seededUsers: users, comments, drawings, quotes, invoices })
   } catch (e) {
     const err = e as { code?: string; message?: string }
     const code = err.code ?? 'UNKNOWN'

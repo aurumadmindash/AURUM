@@ -7,6 +7,9 @@ build/
 uploads/
 .DS_Store
 *.tsbuildinfo
+test-results/
+playwright-report/
+*.zip
 
 # Video production subproject - 1GB+ of renders, not part of the app
 hyperframes-construction-hero/
