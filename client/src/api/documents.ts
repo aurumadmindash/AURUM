@@ -1,4 +1,4 @@
-import api from '../lib/axios'
+import api from '../lib/apiClient'
 
 export type DocumentCategory = 'GENERAL' | 'PHOTO' | 'DRAWING'
 

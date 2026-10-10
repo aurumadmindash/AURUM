@@ -1,8 +1,5 @@
 # Fresh Supabase and Vercel setup
 
-The ZIP update was applied locally. Existing local environment files were preserved.
-No live database was changed and no deployment was made.
-
 1. Create your Supabase account at https://supabase.com/dashboard and complete
    email verification. Create an organization and a new project. Save its database
    password privately. This application uses Prisma with Supabase Postgres and its

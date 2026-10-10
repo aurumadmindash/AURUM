@@ -1,4 +1,9 @@
 import { execSync } from 'child_process'
+import dotenv from 'dotenv'
+
+// Locally the Prisma CLI loads server/.env itself; this script reads
+// process.env directly, so load it here too before capturing the env below.
+dotenv.config()
 
 // Defends against the most common Vercel env-var paste mistakes: a value
 // accidentally wrapped in quotes, or with stray leading/trailing whitespace or
@@ -28,6 +33,28 @@ function describe(label: string, url?: string) {
 }
 describe('DATABASE_URL', env.DATABASE_URL)
 describe('DIRECT_URL', env.DIRECT_URL)
+
+// Runtime queries always go through DATABASE_URL — migrate/seed can fall back
+// to DIRECT_URL, so a build can pass without DATABASE_URL and still deploy an
+// API that cannot answer a single request. Fail here instead of shipping that.
+function assertRuntimeUrl(url: string | undefined): void {
+  if (!url) {
+    throw new Error(
+      'DATABASE_URL is not set - the deployed API needs it for every query. ' +
+      'Add it in Vercel -> Settings -> Environment Variables (Transaction pooler URL: host contains "pooler", port 6543, with ?pgbouncer=true&connection_limit=1) and redeploy.',
+    )
+  }
+  try {
+    const u = new URL(url)
+    if (u.protocol !== 'postgresql:' && u.protocol !== 'postgres:') throw new Error('not postgres')
+  } catch {
+    throw new Error(
+      'DATABASE_URL is not a valid postgres connection string - check for ' +
+      'quotes, a missing postgresql:// prefix, or stray whitespace.',
+    )
+  }
+}
+assertRuntimeUrl(env.DATABASE_URL)
 
 const run = (cmd: string) => execSync(cmd, { stdio: 'inherit', env })
 

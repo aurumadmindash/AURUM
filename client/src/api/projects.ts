@@ -1,4 +1,4 @@
-import api from '../lib/axios'
+import api from '../lib/apiClient'
 import type { Project } from '../types'
 
 export const getProjects = () => api.get<Project[]>('/projects').then((r) => r.data)

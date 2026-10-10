@@ -1,4 +1,4 @@
-import api from '../lib/axios'
+import api from '../lib/apiClient'
 import type { User } from '../types'
 
 export const login = (email: string, password: string) =>

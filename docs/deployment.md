@@ -1,4 +1,4 @@
-# Deploying Arlonecs on Vercel + Supabase (only)
+# Deploying Aurum with Vercel, Supabase and Resend
 
 This app now runs entirely on **Vercel** (frontend static site **and** the Express API as
 serverless functions) with **Supabase** as the Postgres database. No separate backend host.
@@ -60,7 +60,7 @@ In your Vercel project → **Settings → General**:
 | `STRIPE_WEBHOOK_SECRET` | Signing secret for `/api/business/stripe/webhook` |
 | `SALES_EMAIL` | Internal inbox for quote enquiries |
 | `SMTP_HOST` `SMTP_PORT` `SMTP_USER` `SMTP_PASS` | Resend SMTP — see the Resend section below |
-| `SMTP_FROM` | the verified sender address, e.g. `notifications@aurumite.com` |
+| `SMTP_FROM` | the verified sender address, e.g. `contact@aurumite.com` |
 
 **Delete `VITE_API_URL` if it exists** — the frontend must use the same-origin `/api`.
 
@@ -104,7 +104,7 @@ deploying, and issue fresh checkout links after the update where needed.
 
 ---
 
-## Sending email with Resend (notifications@aurumite.com)
+## Sending email with Resend (contact@aurumite.com)
 
 The app sends its own mail (invitations, password resets, comment alerts, the
 daily deadline digest) through Resend's SMTP relay via Nodemailer. The SMTP
@@ -117,7 +117,7 @@ Vercel environment variables (add for Production + Preview):
 | `SMTP_PORT` | `587` |
 | `SMTP_USER` | `resend` (literally — Resend requires this username) |
 | `SMTP_PASS` | a Resend API key (`re_…`) from resend.com/api-keys |
-| `SMTP_FROM` | `notifications@aurumite.com` |
+| `SMTP_FROM` | `contact@aurumite.com` |
 
 One-time setup, in order:
 
@@ -126,7 +126,7 @@ One-time setup, in order:
    until it shows **Verified**. Without this, Resend rejects sends.
 2. **Resend → API Keys** → create a sending key → use it as `SMTP_PASS`.
 3. **Vercel → Settings → Domains** → add `aurumite.com` (and `www`).
-4. Set `SMTP_FROM=notifications@aurumite.com`, replace the old Gmail
+4. Set `SMTP_FROM=contact@aurumite.com`, replace the old Gmail
    `SMTP_USER`/`SMTP_PASS` values, and set `CLIENT_URL` to the address Vercel
    serves (e.g. `https://www.aurumite.com`, no trailing slash).
 5. **Redeploy** — environment variable changes only take effect on a new build.
@@ -162,8 +162,7 @@ Also check **Resend → Logs** — failed sends appear there with the reason.
 - **File uploads** are stored as database bytes by the document and quote routes. Existing legacy files on a separate host must be migrated with their records. Test uploads on the deployed site, since hosting request-size limits also apply.
 - The daily NEC overdue-email job runs via **Vercel Cron** (configured in `vercel.json`,
   08:00 UTC) instead of an always-on timer.
-- Traditional hosting (Render/Railway/Docker) still works too — `server/src/index.ts`
-  runs the same app with a real listener and in-process cron.
+- Local development uses `server/src/index.ts`; production imports `server/src/app.ts` directly.
 
 ## Troubleshooting "Invalid credentials"
 

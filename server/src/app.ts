@@ -23,6 +23,7 @@ import myActionRoutes from './routes/myActions'
 import businessRoutes from './routes/business'
 import invoicePaymentRoutes, { stripeWebhook } from './routes/invoicePayments'
 import { sendOverdueNotifications } from './services/emailService'
+import { summarizeDbError } from './services/databaseHealth'
 
 dotenv.config()
 
@@ -35,7 +36,7 @@ if (!process.env.VERCEL) {
   if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true })
 }
 
-// Running behind a reverse proxy (Vercel/Render/Railway) - needed for
+// Running behind Vercel's reverse proxy - needed for
 // correct client IPs in rate limiting and audit logs
 app.set('trust proxy', 1)
 
@@ -99,19 +100,17 @@ app.get('/api/health/db', async (_req, res) => {
     ])
     res.json({ db: 'ok', schema: 'ok', seededUsers: users, comments, drawings, quotes, invoices })
   } catch (e) {
-    const err = e as { code?: string; message?: string }
-    const code = err.code ?? 'UNKNOWN'
-    const hints: Record<string, string> = {
-      P1000: 'Authentication failed - the password in DATABASE_URL does not match the database.',
-      P1001: 'Cannot reach the database server - host/port wrong or project paused.',
-      P2021: 'Connected, but tables are missing - migrations have not run.',
-    }
-    res.status(500).json({ db: 'error', code, hint: hints[code] ?? (err.message ?? '').split('\n')[0].slice(0, 200) })
+    // First line of a Prisma init error is an empty line and the second is the
+    // "Invalid `prisma.$queryRaw()` invocation" wrapper — showing them yielded
+    // an empty hint that hid whether the URL was missing, malformed or the
+    // server was unreachable. summarizeDbError digs out the real sentence.
+    const { code, name, hint } = summarizeDbError(e)
+    res.status(500).json({ db: 'error', code, name, hint })
   }
 })
 
 // NEC deadline clock endpoint - triggered by Vercel Cron (serverless has no
-// always-on process for node-cron). Vercel Cron sends a GET with an
+// always-on application timer). Vercel Cron sends a GET with an
 // Authorization: Bearer <CRON_SECRET> header when CRON_SECRET is configured.
 const runOverdueCron = async (req: express.Request, res: express.Response): Promise<void> => {
   const secret = process.env.CRON_SECRET

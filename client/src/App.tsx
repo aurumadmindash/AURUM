@@ -23,7 +23,7 @@ const RisksPage = lazy(() => import('./pages/risks/RisksPage'))
 const CompensationEventsPage = lazy(() => import('./pages/compensation-events/CompensationEventsPage'))
 const NoticesPage = lazy(() => import('./pages/notices/NoticesPage'))
 const AuditLogPage = lazy(() => import('./pages/audit/AuditLogPage'))
-const CEWhatIfPage = lazy(() => import('./pages/ce-whatif/CEWhatIfPage'))
+const CompensationScenariosPage = lazy(() => import('./pages/compensation-events/CompensationScenariosPage'))
 const RequestQuotePage = lazy(() => import('./pages/marketing/RequestQuotePage'))
 const PaymentPage = lazy(() => import('./pages/marketing/PaymentPage'))
 const LegalPage = lazy(() => import('./pages/marketing/LegalPage'))
@@ -77,7 +77,7 @@ export default function App() {
           <Route path="projects/:projectId/drawings" element={<DrawingsPage />} />
           <Route path="projects/:projectId/audit" element={<AuditLogPage />} />
           <Route path="projects/:projectId/dashboard" element={<DashboardPage />} />
-          <Route path="projects/:projectId/ce-whatif" element={<CEWhatIfPage />} />
+          <Route path="projects/:projectId/ce-whatif" element={<CompensationScenariosPage />} />
         </Route>
 
         {/* Unknown address - send people somewhere useful */}

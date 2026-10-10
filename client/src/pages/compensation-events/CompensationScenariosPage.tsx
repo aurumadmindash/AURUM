@@ -20,7 +20,7 @@ const scenarioColors: Record<Scenario, string> = {
   REJECTED: '#DC2626',
 }
 
-export default function CEWhatIfPage() {
+export default function CompensationScenariosPage() {
   const { projectId } = useParams<{ projectId: string }>()
   const { data: ces = [], isLoading } = useQuery({
     queryKey: ['ces', projectId],

@@ -6,7 +6,6 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "vercel-build": "vite build --outDir ../dist --emptyOutDir",
     "preview": "vite preview",
     "test:e2e": "playwright test"
   },

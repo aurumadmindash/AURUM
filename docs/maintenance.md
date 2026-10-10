@@ -1,12 +1,12 @@
-# Aurum client handover
+# Aurum maintenance
 
 ## Fresh account setup
 
-Follow [NEW_ACCOUNTS_CHECKLIST.md](NEW_ACCOUNTS_CHECKLIST.md) and
-[DEPLOY_VERCEL_SUPABASE.md](DEPLOY_VERCEL_SUPABASE.md).
+Follow [launch-checklist.md](launch-checklist.md) and
+[deployment.md](deployment.md).
 
 A fresh Supabase project starts empty. Run the included migrations through the
-deployment build; do not wipe an existing database as part of routine handover.
+deployment build; do not wipe an existing database during routine maintenance.
 If existing records are needed, back up and migrate them before changing domains.
 
 ## Administrator account
@@ -54,5 +54,4 @@ workflow, fee proposals, invoice creation, email delivery, payment in Stripe tes
 mode, the live webhook endpoint, and role permissions on the deployed site.
 Replace legal-page placeholders with approved text.
 
-Separate client/contractor/subcontractor organizations are not implemented by this
-update. Project team access still uses the existing shared membership model.
+Separate client/contractor/subcontractor organizations are not currently implemented. Project team access still uses the existing shared membership model.

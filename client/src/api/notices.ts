@@ -1,4 +1,4 @@
-import api from '../lib/axios'
+import api from '../lib/apiClient'
 import type { Notice } from '../types'
 
 const base = (pid: string) => `/projects/${pid}/notices`

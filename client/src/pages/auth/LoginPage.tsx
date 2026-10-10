@@ -39,8 +39,21 @@ export default function LoginPage() {
       navigate('/home')
     } catch (e: unknown) {
       const resp = (e as { response?: { status?: number; data?: { message?: string } } })?.response
-      // 403 = right password but account pending approval / deactivated - explain why
-      setServerError(resp?.status === 403 && resp.data?.message ? resp.data.message : 'Invalid email or password. Please try again.')
+      const status = resp?.status
+      const message = resp?.data?.message
+      if (status === 401) {
+        setServerError('Invalid email or password. Please try again.')
+      } else if (status && [400, 403, 429].includes(status) && message) {
+        // 403 = right password but pending approval/deactivated, 429 = rate
+        // limited, 400 = server-side validation - all explain themselves.
+        setServerError(message)
+      } else if (!resp) {
+        setServerError('Could not reach the server. Check your connection and try again.')
+      } else if (status && status >= 500) {
+        setServerError('The server is unavailable right now. Please try again in a few minutes.')
+      } else {
+        setServerError(message || 'Something went wrong. Please try again.')
+      }
     }
   }
 

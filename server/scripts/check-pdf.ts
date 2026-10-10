@@ -3,7 +3,7 @@
  * the whole PDF pipeline works end to end (letterhead, banner, tables,
  * multi-page continuation, footers). Output goes to the OS temp folder.
  *
- * Run from the server folder:  npx tsx scripts/smoke-pdf.ts
+ * Run from the server folder:  npx tsx scripts/check-pdf.ts
  */
 import fs from 'fs'
 import os from 'os'

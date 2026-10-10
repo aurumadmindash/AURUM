@@ -1,4 +1,4 @@
-import api from '../lib/axios'
+import api from '../lib/apiClient'
 import type { DashboardData, AuditLog } from '../types'
 
 export const getDashboard = (projectId: string) =>

@@ -1,4 +1,4 @@
-import api from '../lib/axios'
+import api from '../lib/apiClient'
 import type { RiskItem, RiskStatus } from '../types'
 
 // Write payload - form values converted to API types (null clears a value)

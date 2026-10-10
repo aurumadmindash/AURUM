@@ -19,7 +19,7 @@ const emailConfigured = () => Boolean(process.env.SMTP_USER && process.env.SMTP_
 
 // With Resend the SMTP username is the literal string "resend" and the password
 // is an API key, so the sender address cannot be derived from SMTP_USER.
-// SMTP_FROM carries the verified sender (e.g. notifications@aurumite.com);
+// SMTP_FROM carries the verified sender (contact@aurumite.com);
 // falling back to SMTP_USER keeps Gmail-style setups working unchanged.
 const FROM = () => process.env.SMTP_FROM
   ? `"Aurum Project Controls" <${process.env.SMTP_FROM}>`
@@ -27,7 +27,7 @@ const FROM = () => process.env.SMTP_FROM
 
 // Diagnostic helper: sends a plain test message so SMTP problems surface with
 // the provider's exact error instead of dying silently inside a
-// fire-and-forget notification. Used by scripts/test-email.ts and the
+// fire-and-forget notification. Used by scripts/check-email.ts and the
 // CRON_SECRET-guarded /api/health/email diagnostic endpoint.
 export async function sendTestEmail(to: string) {
   if (!emailConfigured()) {

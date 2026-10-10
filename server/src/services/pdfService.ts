@@ -91,7 +91,7 @@ function addLetterhead(doc: Doc, project: ProjectMeta): number {
   // Contact block - real platform details only, never invented ones (§15)
   const contactX = divX + 12
   doc.font('Helvetica').fontSize(7.8).fillColor(SLATE)
-  doc.text('notifications@aurumite.com', contactX, 38, { width: right - contactX, align: 'right', lineBreak: false })
+  doc.text('contact@aurumite.com', contactX, 38, { width: right - contactX, align: 'right', lineBreak: false })
   doc.text('www.aurumite.com', contactX, 50, { width: right - contactX, align: 'right', lineBreak: false })
   doc.font('Helvetica').fontSize(7).fillColor(MUTED)
   doc.text('NEC3 & NEC4 Contract Administration', contactX, 66, { width: right - contactX, align: 'right', lineBreak: false })
