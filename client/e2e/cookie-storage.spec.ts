@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 
 for (const accepted of [false, true]) {
-  test(`post-login popup ${accepted ? 'accepts' : 'rejects'} optional cookies and remembers the choice`, async ({ page }, testInfo) => {
+  test(`landing-page popup ${accepted ? 'accepts' : 'rejects'} optional cookies and remembers the choice`, async ({ page }, testInfo) => {
     const errors: string[] = []
     page.on('pageerror', error => errors.push(error.message))
     await page.route('**/api/**', route => {
@@ -9,11 +9,7 @@ for (const accepted of [false, true]) {
       if (route.request().url().endsWith('/me/actions')) return route.fulfill({ json: { totals: { overdue: 0, dueSoon: 0, earlyWarnings: 0, unread: 0 }, overdueCEs: [], dueSoonCEs: [], myEarlyWarnings: [], unread: [] } })
       return route.fulfill({ json: [] })
     })
-    await page.goto('/login')
-    await expect(page.getByRole('dialog')).not.toBeVisible()
-    await page.getByPlaceholder('you@company.com').fill('admin@example.com')
-    await page.locator('input[type="password"]').fill('test-password')
-    await page.getByRole('button', { name: 'Sign in', exact: true }).click()
+    await page.goto('/')
     const popup = page.getByRole('dialog', { name: 'Your cookie choices' })
     await expect(popup).toBeVisible()
     await expect(popup.getByRole('button', { name: 'Accept optional cookies' })).toBeVisible()
@@ -23,9 +19,9 @@ for (const accepted of [false, true]) {
     await expect(popup).not.toBeVisible()
     expect(await page.evaluate(() => JSON.parse(localStorage.getItem('aurum-media-preference')!).enabled)).toBe(accepted)
     await page.reload()
-    await expect(page.getByRole('heading', { name: 'Good day, Aurum' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: /More time/ })).toBeVisible()
     await expect(popup).not.toBeVisible()
-    await page.getByRole('button', { name: 'Cookie settings', exact: true }).click()
+    await page.locator('footer').getByRole('button', { name: 'Cookie settings', exact: true }).click()
     await expect(popup).toBeVisible()
     await page.setViewportSize({ width: 390, height: 844 })
     await expect(popup.getByRole('button', { name: 'Reject optional cookies' })).toBeVisible()
@@ -41,7 +37,7 @@ test('cookie notice can be read without accepting and choices synchronise across
     if (!localStorage.getItem('aurum-auth')) localStorage.setItem('aurum-auth', JSON.stringify({ state: { token: 'test', user: { id: 'admin', name: 'Admin', email: 'admin@example.com', role: 'ADMIN' } }, version: 0 }))
   })
   await page.route('**/api/**', route => route.fulfill({ json: [] }))
-  await page.goto('/jobs')
+  await page.goto('/')
   await page.getByRole('dialog').getByRole('link', { name: 'Read our cookie notice' }).click()
   await expect(page.getByRole('heading', { name: 'Cookie and Browser Storage Notice', exact: true })).toBeVisible()
   await expect(page.getByRole('dialog')).not.toBeVisible()
@@ -57,11 +53,11 @@ test('blocks optional media until consent and remembers withdrawal', async ({ pa
   const mediaRequests: string[] = []
   await page.route('https://videos.pexels.com/**', route => { mediaRequests.push(route.request().url()); return route.fulfill({ status: 200, contentType: 'video/mp4', body: '' }) })
   await page.goto('/')
-  await expect(page.getByRole('button', { name: 'Enable optional background video' })).toBeVisible()
+  await expect(page.getByRole('dialog', { name: 'Your cookie choices' })).toBeVisible()
   await expect(page.locator('video')).toHaveCount(0)
   expect(mediaRequests).toHaveLength(0)
   expect(await page.evaluate(() => localStorage.getItem('aurum-media-preference'))).toBeNull()
-  await page.getByRole('button', { name: 'Enable optional background video' }).click()
+  await page.getByRole('dialog').getByRole('button', { name: 'Accept optional cookies' }).click()
   await expect(page.locator('video')).toHaveCount(1)
   await expect.poll(() => mediaRequests.length).toBeGreaterThan(0)
   const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('aurum-media-preference')!))
@@ -82,7 +78,7 @@ test('blocks optional media until consent and remembers withdrawal', async ({ pa
 test('expired or malformed media choices never enable external video', async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('aurum-media-preference', JSON.stringify({ version: 1, enabled: true, expiresAt: Date.now() - 1000 })))
   await page.goto('/')
-  await expect(page.getByRole('button', { name: 'Enable optional background video' })).toBeVisible()
+  await expect(page.getByRole('dialog', { name: 'Your cookie choices' })).toBeVisible()
   await expect(page.locator('video')).toHaveCount(0)
   expect(await page.evaluate(() => localStorage.getItem('aurum-media-preference'))).toBeNull()
 })
@@ -94,7 +90,7 @@ test('sign-out deletes the account entry and its token', async ({ page }) => {
   await page.route('**/api/**', route => route.fulfill({ json: [] }))
   await page.goto('/jobs')
   await expect(page.getByRole('heading', { name: 'Aurum Jobs' })).toBeVisible()
-  await page.getByRole('dialog').getByRole('button', { name: 'Reject optional cookies' }).click()
+  await expect(page.getByRole('dialog')).not.toBeVisible()
   await page.getByTitle('Sign out', { exact: true }).click()
   await expect(page).toHaveURL(/\/login$/)
   expect(await page.evaluate(() => localStorage.getItem('aurum-auth'))).toBeNull()

@@ -29,6 +29,6 @@ No statistical-purpose or appearance exception is currently claimed for analytic
 
 `client/e2e/cookie-storage.spec.ts` checks no Pexels request before permission, consent persistence/withdrawal, expiry, sign-out deletion and mobile presentation of the inventory and pricing. The local media request is intercepted; real third-party cookie names and timing come from the separate live anonymous audit.
 
-## Post-login consent popup
+## Landing-page consent popup
 
-A native accessible dialog is shown after sign-in if there is no valid saved choice. Accept and Reject apply only to optional Pexels media; essential authentication is retained for either decision. The same preference is used by the home-page video, cookie-notice controls, app-header Cookie settings and marketing-footer Cookie settings. Saved choices prevent repeat prompts for 180 days. Visitors can read the notice without opting in, and preference changes propagate to other open tabs. The notice has been reorganised into six sections covering technologies, categories, choices, inventory, providers and contact.
+A native accessible dialog is shown on the landing page, before sign-in if there is no valid saved choice. Accept and Reject apply only to optional Pexels media; essential authentication is retained for either decision. The same preference is used by the home-page video, cookie-notice controls, app-header Cookie settings and marketing-footer Cookie settings. Saved choices prevent repeat prompts for 180 days. Visitors can read the notice without opting in, and preference changes propagate to other open tabs. The notice has been reorganised into six sections covering technologies, categories, choices, inventory, providers and contact.
