@@ -12,6 +12,7 @@ function fixture() {
 async function setup(page: Page) {
   let job = fixture()
   let saveFails = false
+  await page.addInitScript(() => localStorage.setItem('aurum-media-preference', JSON.stringify({ version: 1, enabled: false, expiresAt: Date.now() + 86400000 })))
   await page.addInitScript(() => { if (!localStorage.getItem('aurum-auth')) localStorage.setItem('aurum-auth', JSON.stringify({ state: { token: 'test-token', user: { id: 'admin', name: 'Aurum Admin', email: 'admin@example.com', role: 'ADMIN' } }, version: 0 })); })
   await page.route('**/api/**', async route => {
     const request = route.request(), url = new URL(request.url())

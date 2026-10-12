@@ -3,6 +3,7 @@ import { useAuthStore } from './store/authStore'
 import { lazy, Suspense } from 'react'
 import { PageLoader } from './components/ui/LogoSpinner'
 import LandingPage from './pages/marketing/LandingPage'
+import CookieConsentPopup from './components/layout/CookieConsentPopup'
 
 const Layout = lazy(() => import('./components/layout/Layout'))
 const LoginPage = lazy(() => import('./pages/auth/LoginPage'))
@@ -41,6 +42,7 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <BrowserRouter>
+      <CookieConsentPopup />
       <Suspense fallback={<PageLoader />}>
       <Routes>
         <Route path="/login" element={<LoginPage />} />

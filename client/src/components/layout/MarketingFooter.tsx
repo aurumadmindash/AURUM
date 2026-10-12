@@ -1,9 +1,11 @@
 import { Link } from 'react-router-dom'
 import { ArrowUpRight, Mail, MapPin } from 'lucide-react'
+import { useMediaConsentStore } from '../../store/mediaConsentStore'
 
 const linkClass = 'inline-flex min-h-10 items-center text-sm text-white/70 transition hover:text-amber-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-amber-300'
 
 export default function MarketingFooter() {
+  const openCookieSettings = useMediaConsentStore(s => s.openSettings)
   return <footer className="bg-navy-950 px-5 text-white sm:px-8 lg:px-10">
     <div className="mx-auto max-w-[1400px]">
       <div className="grid gap-10 py-12 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1.3fr] lg:gap-12 lg:py-16">
@@ -46,6 +48,7 @@ export default function MarketingFooter() {
         <nav aria-label="Footer legal" className="flex flex-wrap gap-x-6 gap-y-2">
           <Link to="/legal/privacy" className="py-2 hover:text-white">Privacy</Link>
           <Link to="/legal/cookies" className="py-2 hover:text-white">Cookies</Link>
+          <button type="button" onClick={openCookieSettings} className="py-2 text-left hover:text-white">Cookie settings</button>
           <Link to="/legal/terms" className="py-2 hover:text-white">Terms of use</Link>
           <Link to="/legal/business" className="py-2 hover:text-white">Terms of business</Link>
         </nav>
