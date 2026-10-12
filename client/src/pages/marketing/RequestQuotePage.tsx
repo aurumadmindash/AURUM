@@ -1,3 +1,4 @@
+import MarketingFooter from '../../components/layout/MarketingFooter'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, Check, CheckCircle2, FileText, ShieldCheck, UploadCloud } from 'lucide-react'
@@ -54,6 +55,6 @@ export default function RequestQuotePage() {
         <div className="rounded-2xl bg-surface-100 p-5 sm:flex sm:items-center sm:justify-between sm:gap-6 sm:p-6"><p className="text-[10px] leading-5 text-slate-600">By submitting, you confirm the information is supplied to help Aurum prepare a quotation for your project.</p><button disabled={busy} className="mt-4 inline-flex w-full shrink-0 items-center justify-center gap-2 rounded-lg bg-navy-900 px-6 py-3.5 text-sm font-extrabold text-white transition hover:bg-navy-800 disabled:cursor-wait disabled:opacity-50 sm:mt-0 sm:w-auto">{busy?'Submitting…':'Submit for review'} {busy ? null : <ArrowRight size={16}/>}</button></div>
       </form></div>
     </main>
-    <footer className="border-t border-black/[.06] bg-white px-5 py-6 text-center text-[10px] text-slate-500">© {new Date().getFullYear()} Aurum Project Controls · <Link to="/legal/privacy" className="font-semibold hover:text-slate-900">Privacy notice</Link></footer>
+    <MarketingFooter />
   </div>
 }

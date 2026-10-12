@@ -1,3 +1,4 @@
+import MarketingFooter from '../../components/layout/MarketingFooter'
 import { Link, useLocation } from 'react-router-dom'
 import {
   ArrowDown, ArrowRight, ArrowUpRight, Check, CheckCircle2, Clock3, FileCheck2,
@@ -165,6 +166,6 @@ export default function LandingPage() {
       <section className="border-y border-black/[.06] bg-white px-5 py-5 sm:px-8 lg:px-10"><div className="mx-auto flex max-w-[1400px] flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div className="flex items-center gap-3"><div className="flex h-9 w-9 items-center justify-center rounded-lg bg-navy-900 text-amber-300"><Layers3 size={17}/></div><div><div className="text-xs font-extrabold">Digital Tools / Aurum Platform</div><div className="mt-0.5 text-[10px] text-slate-500">Project-control software is available separately from our core estimating service.</div></div></div><Link to="/login" className="inline-flex items-center gap-2 text-xs font-extrabold text-slate-700 transition hover:text-amber-700">Platform login <ArrowUpRight size={14}/></Link></div></section>
     </main>
 
-    <footer className="bg-white px-5 py-8 sm:px-8 lg:px-10"><div className="mx-auto flex max-w-[1400px] flex-col gap-6 md:flex-row md:items-center md:justify-between"><Link to="/" className="flex items-center gap-3"><img src="/logo.png" alt="Aurum" className="h-9 w-9" /><div><div className="text-xs font-extrabold tracking-[.15em]">AURUM</div><div className="text-[9px] uppercase tracking-[.22em] text-slate-400">Project Controls</div></div></Link><p className="max-w-md text-[10px] leading-5 text-slate-500">© {new Date().getFullYear()} Aurum Project Controls. Outsourced estimating, quantity surveying and commercial support.</p><div className="flex flex-wrap gap-x-4 gap-y-2 text-[10px] font-medium text-slate-500"><Link className="hover:text-slate-900" to="/legal/privacy">Privacy</Link><Link className="hover:text-slate-900" to="/legal/cookies">Cookies</Link><Link className="hover:text-slate-900" to="/legal/terms">Terms of use</Link><Link className="hover:text-slate-900" to="/legal/business">Terms of business</Link></div></div></footer>
+    <MarketingFooter />
   </div>
 }
