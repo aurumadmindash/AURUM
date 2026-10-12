@@ -9,7 +9,7 @@ beforeEach(() => {
   vi.resetAllMocks()
   vi.stubEnv('SMTP_USER', 'resend')
   vi.stubEnv('SMTP_PASS', 'test-key')
-  vi.stubEnv('SMTP_FROM', 'enquires@aurumite.com')
+  vi.stubEnv('SMTP_FROM', 'enquiries@aurumite.com')
   vi.stubEnv('SALES_EMAIL', 'sales@aurumite.com')
   vi.stubEnv('CLIENT_URL', 'https://aurumite.com')
   mocks.createTransport.mockReturnValue({ sendMail: mocks.sendMail })
@@ -37,8 +37,8 @@ describe('project email delivery', () => {
     expect(mocks.sendMail).not.toHaveBeenCalled()
   })
   it.each([
-    ['enquires@aurumite.com', '"Aurum Project Controls" <enquires@aurumite.com>'],
-    ['Aurum <enquires@aurumite.com>', 'Aurum <enquires@aurumite.com>'],
+    ['enquiries@aurumite.com', '"Aurum Project Controls" <enquiries@aurumite.com>'],
+    ['Aurum <enquiries@aurumite.com>', 'Aurum <enquiries@aurumite.com>'],
   ])('keeps a valid sender address for %s', async (sender, expected) => {
     vi.stubEnv('SMTP_FROM', sender)
     await sendQuoteReceivedEmail('sender@example.com', 'Client', 'Site')

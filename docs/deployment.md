@@ -60,7 +60,7 @@ In your Vercel project → **Settings → General**:
 | `STRIPE_WEBHOOK_SECRET` | Signing secret for `/api/business/stripe/webhook` |
 | `SALES_EMAIL` | Internal inbox for quote enquiries |
 | `SMTP_HOST` `SMTP_PORT` `SMTP_USER` `SMTP_PASS` | Resend SMTP — see the Resend section below |
-| `SMTP_FROM` | the verified sender address, e.g. `enquires@aurumite.com` |
+| `SMTP_FROM` | the verified sender address, e.g. `enquiries@aurumite.com` |
 
 **Delete `VITE_API_URL` if it exists** — the frontend must use the same-origin `/api`.
 
@@ -104,7 +104,7 @@ deploying, and issue fresh checkout links after the update where needed.
 
 ---
 
-## Sending email with Resend (enquires@aurumite.com)
+## Sending email with Resend (enquiries@aurumite.com)
 
 The app sends its own mail (invitations, password resets, comment alerts, the
 daily deadline digest) through Resend's SMTP relay via Nodemailer. The SMTP
@@ -117,7 +117,7 @@ Vercel environment variables (add for Production + Preview):
 | `SMTP_PORT` | `587` |
 | `SMTP_USER` | `resend` (literally — Resend requires this username) |
 | `SMTP_PASS` | a Resend API key (`re_…`) from resend.com/api-keys |
-| `SMTP_FROM` | `enquires@aurumite.com` |
+| `SMTP_FROM` | `enquiries@aurumite.com` |
 
 One-time setup, in order:
 
@@ -126,7 +126,7 @@ One-time setup, in order:
    until it shows **Verified**. Without this, Resend rejects sends.
 2. **Resend → API Keys** → create a sending key → use it as `SMTP_PASS`.
 3. **Vercel → Settings → Domains** → add `aurumite.com` (and `www`).
-4. Set `SMTP_FROM=enquires@aurumite.com`, replace the old Gmail
+4. Set `SMTP_FROM=enquiries@aurumite.com`, replace the old Gmail
    `SMTP_USER`/`SMTP_PASS` values, and set `CLIENT_URL` to the address Vercel
    serves (e.g. `https://www.aurumite.com`, no trailing slash).
 5. **Redeploy** — environment variable changes only take effect on a new build.

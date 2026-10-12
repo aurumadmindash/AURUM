@@ -34,7 +34,7 @@ const escapeHtml = (value: string) => value.replace(/&/g, '&amp;').replace(/</g,
 
 // With Resend the SMTP username is the literal string "resend" and the password
 // is an API key, so the sender address cannot be derived from SMTP_USER.
-// SMTP_FROM carries the verified sender (enquires@aurumite.com);
+// SMTP_FROM carries the verified sender (enquiries@aurumite.com);
 // falling back to SMTP_USER keeps Gmail-style setups working unchanged.
 const FROM = () => {
   const sender = (process.env.SMTP_FROM || process.env.SMTP_USER || '').trim()
@@ -325,7 +325,7 @@ export async function sendQuoteReceivedEmail(to: string, clientName: string, pro
   await transporter.sendMail({
     from: FROM(), to,
     subject: `Tender received - ${projectName} - Aurum`,
-    text: `Hi ${clientName},\n\nWe have received your tender submission for ${projectName}, including any documents you uploaded. Our team is reviewing your information and will contact you with the next steps, scope, programme and proposed fee.\n\nThank you,\nAurum Project Controls\nenquires@aurumite.com`,
+    text: `Hi ${clientName},\n\nWe have received your tender submission for ${projectName}, including any documents you uploaded. Our team is reviewing your information and will contact you with the next steps, scope, programme and proposed fee.\n\nThank you,\nAurum Project Controls\nenquiries@aurumite.com`,
     html: shell(`
       <h3 style="color:#080F1C;font-size:20px;margin:0 0 8px">Your tender has been received</h3>
       <p style="color:#475569;font-size:14px;line-height:1.6">Hi ${escapeHtml(clientName)}, thank you for sending your tender for <strong>${escapeHtml(projectName)}</strong>. We have received your information and any documents you uploaded. Our team is reviewing your submission.</p>

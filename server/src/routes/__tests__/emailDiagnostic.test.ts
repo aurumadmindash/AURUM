@@ -23,7 +23,7 @@ beforeAll(async () => {
 afterAll(async () => { await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve())) })
 beforeEach(() => {
   vi.clearAllMocks()
-  vi.stubEnv('SMTP_USER', 'resend'); vi.stubEnv('SMTP_PASS', 'test-key'); vi.stubEnv('SMTP_FROM', 'enquires@aurumite.com')
+  vi.stubEnv('SMTP_USER', 'resend'); vi.stubEnv('SMTP_PASS', 'test-key'); vi.stubEnv('SMTP_FROM', 'enquiries@aurumite.com')
   mocks.send.mockResolvedValue({ accepted: ['owner@example.com'], rejected: [] })
 })
 describe('email diagnostic', () => {

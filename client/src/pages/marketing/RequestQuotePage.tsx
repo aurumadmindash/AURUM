@@ -15,7 +15,7 @@ export default function RequestQuotePage() {
     e.preventDefault(); setError('')
     const selectedFiles = Object.values(files).flat()
     if (selectedFiles.reduce((total, file) => total + file.size, 0) > MAX_UPLOAD_BYTES) {
-      setError('Your documents exceed the 4 MB total upload limit. Please compress them or submit the tender details first and email larger documents to enquires@aurumite.com.')
+      setError('Your documents exceed the 4 MB total upload limit. Please compress them or submit the tender details first and email larger documents to enquiries@aurumite.com.')
       return
     }
     if ((files.drawings?.length ?? 0) > 3) { setError('Select up to three drawing files.'); return }
@@ -29,12 +29,12 @@ export default function RequestQuotePage() {
       const raw = await r.text()
       let j: { id?: string; message?: string } | undefined
       try { j = JSON.parse(raw) } catch { /* Hosting errors may be plain text or HTML. */ }
-      if (!r.ok) throw new Error(j?.message || 'We could not submit your tender right now. Please try again or contact enquires@aurumite.com.')
-      if (!j?.id) throw new Error('The server did not confirm receipt. Please contact enquires@aurumite.com before submitting again.')
+      if (!r.ok) throw new Error(j?.message || 'We could not submit your tender right now. Please try again or contact enquiries@aurumite.com.')
+      if (!j?.id) throw new Error('The server did not confirm receipt. Please contact enquiries@aurumite.com before submitting again.')
       setDone(true); window.scrollTo({ top: 0, behavior: 'smooth' })
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : ''
-      setError(err instanceof TypeError || /expected pattern/i.test(message) ? 'We could not submit your tender. Check your connection and try again, or contact enquires@aurumite.com.' : message || 'Something went wrong. Please try again.')
+      setError(err instanceof TypeError || /expected pattern/i.test(message) ? 'We could not submit your tender. Check your connection and try again, or contact enquiries@aurumite.com.' : message || 'Something went wrong. Please try again.')
     } finally { setBusy(false) }
   }
   const filePicker = (kind: string) => (e: React.ChangeEvent<HTMLInputElement>) => setFiles(v => ({ ...v, [kind]: Array.from(e.target.files || []) }))
