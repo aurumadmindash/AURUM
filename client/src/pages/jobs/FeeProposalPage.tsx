@@ -1,5 +1,57 @@
-import { useEffect, useState } from 'react'
+﻿import { useEffect, useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { ArrowLeft, Download } from 'lucide-react'
 import api from '../../lib/apiClient'
-export default function FeeProposalPage(){const {id=''}=useParams();const [j,setJ]=useState<any>(null);useEffect(()=>{api.get(`/business/quotes/${id}`).then(r=>setJ(r.data))},[id]);if(!j)return <div className="p-8">Loading proposal…</div>;return <div className="min-h-screen bg-slate-100 p-5 print:bg-white print:p-0"><div className="mx-auto max-w-3xl bg-white p-8 shadow-sm print:max-w-none print:shadow-none"><div className="flex items-start justify-between border-b pb-6"><div><h1 className="font-display text-2xl font-bold">AURUM PROJECT CONTROLS</h1><p className="mt-1 text-xs uppercase tracking-widest text-slate-500">Fee Proposal</p></div><button onClick={()=>window.print()} className="rounded bg-slate-900 px-4 py-2 text-sm font-bold text-white print:hidden">Print / Save PDF</button></div><div className="mt-7 grid grid-cols-2 gap-5 text-sm"><div><span className="text-slate-500">Project</span><p className="font-bold">{j.projectName}</p></div><div><span className="text-slate-500">Date</span><p className="font-bold">{new Date().toLocaleDateString('en-GB')}</p></div><div><span className="text-slate-500">Client</span><p className="font-bold">{j.company}</p><p>{j.name}</p></div><div><span className="text-slate-500">Tender deadline</span><p className="font-bold">{j.tenderDeadline?new Date(j.tenderDeadline).toLocaleDateString('en-GB'):'Not supplied'}</p></div></div><Section title="Scope of Service">Aurum Project Controls will provide {j.service.replaceAll('_',' ').toLowerCase()} services for the project based on the drawings, specification, BoQ and other information supplied by the Client.</Section><Section title="Deliverables"><ul className="list-disc space-y-1 pl-5"><li>Excel quantity take-off / estimate as applicable</li><li>PDF marked-up drawings as applicable</li><li>Assumptions and exclusions schedule</li><li>Final PDF issue</li></ul></Section><Section title="Information Supplied by Client"><p>Drawing/specification/document references supplied with the project enquiry.</p>{j.documents?.length?<ul className="mt-2 list-disc pl-5">{j.documents.map((d:any)=><li key={d.id}>{d.name}</li>)}</ul>:<p className="mt-2 text-slate-500">No documents recorded.</p>}</Section><Section title="Programme"><p>Information required by: <b>{j.tenderDeadline?new Date(j.tenderDeadline).toLocaleDateString('en-GB'):'[date]'}</b></p><p className="mt-1">Target delivery: <b>{j.requiredDelivery?new Date(j.requiredDelivery).toLocaleDateString('en-GB'):'[date]'}</b></p></Section><Section title="Professional Fee"><p className="text-2xl font-bold">£{Number(j.fee||0).toFixed(2)}</p><p className="mt-1">VAT: Not applicable / applicable as appropriate</p><p className="font-bold">Total: £{Number(j.fee||0).toFixed(2)}</p></Section><Section title="Payment">Example: 50% payable on appointment and 50% before issue of final editable deliverables.</Section><Section title="Assumptions">The service will be based on the information provided by the Client. Any material information unavailable at the time of preparation will be identified where reasonably practical as an assumption, exclusion or clarification.</Section><Section title="Additional Services">Services outside the agreed scope will only be undertaken following agreement of any additional fee and programme.</Section><Section title="Client Responsibilities">The Client is responsible for providing complete and current project information and notifying Aurum of relevant drawing or design revisions.</Section><div className="mt-8 border-t pt-6 text-sm"><p className="font-bold">Acceptance</p><p className="mt-2">Please confirm acceptance of this proposal by email or signed return before commencement.</p><p className="mt-6 font-bold">Prepared by</p><p>Jeremiah Elisha Gwani</p><p>Aurum Project Controls</p><p className="mt-4">Bank Details: [Insert bank details]</p></div><div className="mt-8 print:hidden"><Link to={`/jobs/${j.id}`} className="text-sm font-semibold text-slate-500">← Back to job</Link></div></div></div>}
-function Section({title,children}:{title:string,children:React.ReactNode}){return <section className="mt-7 border-t pt-5"><h2 className="font-bold">{title}</h2><div className="mt-2 text-sm leading-6 text-slate-700">{children}</div></section>}
+import { useAuthStore } from '../../store/authStore'
+import { date, downloadFile, errorMessage, Job, jobFilename, label, money, proposalDefaults } from './jobUtils'
+import { Detail, Notice, primaryButton, secondaryButton } from './JobUI'
+
+export default function FeeProposalPage() {
+  const { id = '' } = useParams()
+  const user = useAuthStore(s => s.user)
+  const allowed = user?.role === 'ADMIN' || user?.role === 'COMMERCIAL_MANAGER'
+  const [job, setJob] = useState<Job | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
+  useEffect(() => {
+    let cancelled = false
+    if (!allowed) { setLoading(false); return }
+    setLoading(true); setError('')
+    api.get<Job>(`/business/quotes/${id}`).then(r => { if (!cancelled) setJob(r.data) }).catch(e => { if (!cancelled) setError(errorMessage(e, 'Could not load the proposal.')) }).finally(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
+  }, [id, allowed])
+  const exportPdf = async () => {
+    if (!job) return
+    setBusy(true); setError('')
+    try { await downloadFile(`/business/quotes/${id}/proposal.pdf`, jobFilename(job, 'fee-proposal.pdf')) }
+    catch (e) { setError(errorMessage(e, 'Could not export the proposal. Please try again.')) }
+    finally { setBusy(false) }
+  }
+  if (!allowed) return <Notice error>Fee proposals are available to administrators and commercial managers.</Notice>
+  if (loading) return <p role="status" className="p-10 text-center text-slate-500">Loading fee proposal…</p>
+  const proposal = job ? proposalDefaults(job) : null
+  return <div className="mx-auto max-w-4xl space-y-5">
+    <div className="flex flex-wrap items-center justify-between gap-3"><Link to={`/jobs/${id}`} className={secondaryButton}><ArrowLeft size={16} /> Back to job</Link><button disabled={busy || !job} onClick={exportPdf} className={primaryButton}><Download size={16} />{busy ? 'Exporting…' : 'Download proposal PDF'}</button></div>
+    {error && <Notice error>{error}</Notice>}
+    {job && proposal && <>
+      {(job.fee == null || !job.requiredDelivery || !job.paymentTerms) && <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">Proposal needs review: {[job.fee == null && 'fee', !job.requiredDelivery && 'delivery date', !job.paymentTerms && 'payment terms'].filter(Boolean).join(', ')} not recorded. Complete these in the job before issuing to the client.</div>}
+      <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-10">
+        <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 pb-6"><div className="flex items-center gap-3"><img src="/logo.png" alt="Aurum logo" className="h-14 w-14" /><div><p className="font-display text-lg font-bold text-navy-900">AURUM PROJECT CONTROLS</p><p className="mt-1 text-xs text-slate-500">Aberdeen, Scotland</p></div></div><p className="text-xs text-slate-500">enquiries@aurumite.com</p></div>
+        <p className="mt-7 text-xs font-semibold uppercase tracking-[.2em] text-amber-700">Fee proposal</p><h1 className="mt-3 break-words font-display text-3xl font-bold text-navy-900">{job.projectName}</h1>
+        <dl className="mt-7 grid gap-5 sm:grid-cols-2"><Detail title="Client">{job.company}<br />{job.name}</Detail><Detail title="Contact">{job.email}{job.telephone && <><br />{job.telephone}</>}</Detail><Detail title="Service">{label(job.service)}</Detail><Detail title="Project location">{job.projectLocation}</Detail><Detail title="Proposal date">{date(new Date().toISOString())}</Detail><Detail title="Job reference">{job.id}</Detail></dl>
+        <Section title="Scope of service"><p className="whitespace-pre-wrap">{proposal.proposalScope || 'Not recorded.'}</p></Section>
+        <Section title="Deliverables">{proposal.proposalDeliverables ? <ul className="list-disc space-y-2 pl-5">{proposal.proposalDeliverables.split('\n').filter(line => line.trim()).map((line, index) => <li key={index}>{line}</li>)}</ul> : 'Not recorded.'}</Section>
+        <Section title="Programme"><dl className="grid gap-4 sm:grid-cols-2"><Detail title="Tender deadline">{date(job.tenderDeadline)}</Detail><Detail title="Target Aurum delivery">{date(job.requiredDelivery)}</Detail></dl></Section>
+        <Section title="Professional fee"><p className="text-3xl font-bold text-navy-900">{money(job.fee)}</p><p className="mt-3 text-xs leading-6 text-slate-500">GBP. Any applicable VAT and final tax treatment must be confirmed in the written appointment; this proposal does not add VAT.</p></Section>
+        <Section title="Payment terms"><p className="whitespace-pre-wrap">{proposal.paymentTerms || 'To be agreed in writing before appointment.'}</p></Section>
+        <Section title="Documents supplied">{job.documents.length ? <ul className="space-y-2">{job.documents.map(d => <li key={d.id} className="break-words">{d.name} <span className="text-xs text-slate-400">· {label(d.kind)}</span></li>)}</ul> : 'No documents recorded.'}</Section>
+        <Section title="Assumptions and exclusions"><p className="whitespace-pre-wrap">{proposal.proposalAssumptions || 'Not recorded.'}</p></Section>
+        <Section title="Client responsibilities & additional services">Provide complete and current project information and notify Aurum of relevant drawing or design revisions. Services outside the agreed scope require written agreement of additional fees and programme.</Section>
+        <Section title="Acceptance">Please confirm the scope, fee, programme and payment terms by email or signed return before commencement.</Section>
+        <div className="mt-8 border-t border-slate-200 pt-6 text-sm leading-6"><p className="font-semibold">Prepared by Jeremiah Elisha Gwani</p><p>Aurum Project Controls</p><a href="mailto:enquiries@aurumite.com" className="text-amber-800 underline">enquiries@aurumite.com</a></div>
+      </article>
+    </>}
+  </div>
+}
+function Section({ title, children }: { title: string; children: ReactNode }) { return <section className="mt-7 border-t border-slate-100 pt-5"><h2 className="font-display text-lg font-semibold text-navy-900">{title}</h2><div className="mt-3 text-sm leading-7 text-slate-600">{children}</div></section> }

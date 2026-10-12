@@ -291,6 +291,10 @@ model QuoteRequest {
   clientRequirements  String?
   requiredTrades      String?
   missingInformation  String?
+  proposalScope       String?
+  proposalDeliverables String?
+  proposalAssumptions String?
+  paymentTerms        String?
   createdAt           DateTime    @default(now())
   updatedAt           DateTime    @updatedAt
   documents           QuoteDocument[]
