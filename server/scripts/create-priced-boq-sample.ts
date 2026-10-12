@@ -28,6 +28,18 @@ async function main() {
   const align = (column: number): 'left' | 'center' | 'right' => column === 3 ? 'center' : column >= 2 ? 'right' : 'left'
   let first = true
   let y = 0
+  doc.rect(0, 0, doc.page.width, doc.page.height).fill('#f8fafc')
+  doc.rect(0, 0, 18, doc.page.height).fill('#b58a45')
+  doc.fillColor('#13234d').font('Helvetica-Bold').fontSize(18).text('AURUM', 62, 60)
+  doc.font('Helvetica').fontSize(10).text('PROJECT CONTROLS', 62, 86)
+  doc.fillColor('#b58a45').font('Helvetica-Bold').fontSize(11).text('SAMPLE PROJECT DOCUMENT', 62, 158)
+  doc.fillColor('#13234d').fontSize(32).text('Refurbishment\nBuilding BOQ', 62, 194, { width: 700 })
+  doc.font('Helvetica').fontSize(20).text('Bill of Quantities', 62, 290)
+  doc.moveTo(62, 335).lineTo(780, 335).strokeColor('#b58a45').stroke()
+  doc.fontSize(11).text('DOCUMENT REF.   AUR-SAMPLE-BOQ-001     |     REVISION 04', 62, 357)
+  doc.text('Prepared by Aurum Project Controls', 62, 386)
+  doc.fillColor('#64748b').fontSize(10).text('Priced refurbishment trade bills and reconciled cost summary.\nPublished evaluation quantities and historical GBP reference rates.\nIllustrative sample only; not issued for tender or construction.', 62, 432, { width: 700, lineGap: 6 })
+  first = false
   function page(title: string) {
     if (!first) doc.addPage()
     first = false

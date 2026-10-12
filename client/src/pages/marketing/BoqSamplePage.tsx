@@ -3,7 +3,7 @@ import { Link, Navigate, useParams } from 'react-router-dom'
 import { ArrowLeft, ChevronLeft, ChevronRight, Download, ZoomIn, ZoomOut } from 'lucide-react'
 
 const samples = {
-  '1': { title: 'Refurbishment Building BOQ', pages: 5, file: 'boq-sample', description: 'Priced refurbishment example with historical reference rates, detailed trade bills and a cost summary. For illustration only.' },
+  '1': { title: 'Refurbishment Building BOQ', pages: 6, file: 'boq-sample', description: 'Priced refurbishment example with historical reference rates, detailed trade bills and a cost summary. For illustration only.' },
   '2': { title: '5 Unit 2 Bedroom Building BOQ', pages: 33, file: 'boq-client-completed', description: 'Complete bill of quantities with a project cover, cost summary and detailed quantity basis. Modelled quantities and supplied rates. For illustration only.' },
 }
 

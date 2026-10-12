@@ -17,4 +17,4 @@ python server/scripts/render-boq-previews.py
 
 The original source workbook remains unchanged. Completion uses an explicit five-dwelling sample model. Quantities are not actual site measurements. Structural allowances and reinforcement allocations are provisional. Original supplied GBP rates are preserved; they are not asserted to be current market prices. The illustrative VAT calculation requires verification for a live project.
 
-Mobile viewers use five and 33 static WebP pages respectively with page navigation and zoom. Regenerate the previews whenever the PDF changes. PDF is the only public download format.
+Mobile viewers use six and 33 static WebP pages respectively with page navigation and zoom. Regenerate the previews whenever the PDF changes. PDF is the only public download format.
