@@ -30,8 +30,9 @@ async function main() {
   let y = 0
   doc.rect(0, 0, doc.page.width, doc.page.height).fill('#f8fafc')
   doc.rect(0, 0, 18, doc.page.height).fill('#b58a45')
-  doc.fillColor('#13234d').font('Helvetica-Bold').fontSize(18).text('AURUM', 62, 60)
-  doc.font('Helvetica').fontSize(10).text('PROJECT CONTROLS', 62, 86)
+  doc.image(path.resolve('client/public/logo.png'), 62, 44, { fit: [60, 60] })
+  doc.fillColor('#13234d').font('Helvetica-Bold').fontSize(18).text('AURUM', 132, 60)
+  doc.font('Helvetica').fontSize(10).text('PROJECT CONTROLS', 132, 86)
   doc.fillColor('#b58a45').font('Helvetica-Bold').fontSize(11).text('SAMPLE PROJECT DOCUMENT', 62, 158)
   doc.fillColor('#13234d').fontSize(32).text('Refurbishment\nBuilding BOQ', 62, 194, { width: 700 })
   doc.font('Helvetica').fontSize(20).text('Bill of Quantities', 62, 290)
