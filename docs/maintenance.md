@@ -70,7 +70,7 @@ Set the issuing company name, email, website and PNG/JPEG logo in New Project or
 
 Project members receive contract changes, including their own changes, when Contract events is enabled. Active staff receive job updates and invoice-creation messages. Comments respect their separate preference and visibility rules. Saving waits for the email attempt; provider failure is logged without undoing the saved record. Failed change emails are not automatically retried.
 
-Administrators can open Settings and choose Send test email. Provider acceptance is not a guarantee of inbox delivery: check spam and Resend email logs. Production requires SMTP_HOST=smtp.resend.com, SMTP_PORT=587, SMTP_USER=resend, SMTP_PASS set to the Resend API key, SMTP_FROM=contact@aurumite.com and a verified sending domain. Redeploy after changing Vercel settings.
+Administrators can open Settings and choose Send test email. Provider acceptance is not a guarantee of inbox delivery: check spam and Resend email logs. Production requires SMTP_HOST=smtp.resend.com, SMTP_PORT=587, SMTP_USER=resend, SMTP_PASS set to the Resend API key, SMTP_FROM=enquires@aurumite.com and a verified sending domain. Redeploy after changing Vercel settings.
 
 ## Tender submissions
 

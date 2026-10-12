@@ -24,9 +24,9 @@ Both connection strings must reference the same project.
 The server service build generates Prisma, applies migrations and seeds the admin.
 Failures stop deployment. Do not create application tables by hand.
 
-Resend must verify aurumite.com before sending as contact@aurumite.com.
+Resend must verify aurumite.com before sending as enquires@aurumite.com.
 Set SMTP_HOST=smtp.resend.com, SMTP_PORT=587, SMTP_USER=resend,
-SMTP_PASS to the Resend sending API key, and SMTP_FROM=contact@aurumite.com.
+SMTP_PASS to the Resend sending API key, and SMTP_FROM=enquires@aurumite.com.
 Set SALES_EMAIL to a working inbox for enquiries.
 Supabase Auth/SMTP settings are not used by this app.
 
