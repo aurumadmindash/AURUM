@@ -21,7 +21,10 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       token: null,
       setAuth: (user, token) => set({ user, token }),
-      logout: () => set({ user: null, token: null }),
+      logout: () => {
+        set({ user: null, token: null })
+        useAuthStore.persist?.clearStorage()
+      },
     }),
     { name: 'aurum-auth' },
   ),

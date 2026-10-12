@@ -7,6 +7,7 @@ import {
   MoveRight,
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { useMediaConsentStore } from '../../store/mediaConsentStore'
 
 const media = {
   hero: '/landing/aurum-hero-site.jpg',
@@ -36,6 +37,8 @@ const process = [
 ]
 
 export default function LandingPage() {
+  const videoEnabled = useMediaConsentStore(s => s.enabled)
+  const setVideoEnabled = useMediaConsentStore(s => s.setEnabled)
   const [open, setOpen] = useState(false)
   const [navigation, setNavigation] = useState({ floating: false, visible: true })
   const { hash } = useLocation()
@@ -89,9 +92,9 @@ export default function LandingPage() {
       {/* Cinematic hero: video is progressive enhancement; poster remains the fallback. */}
       <section className="relative isolate flex min-h-[690px] items-center overflow-hidden bg-navy-900 text-white lg:min-h-[760px]">
         <div className="absolute inset-0 -z-20 bg-cover bg-center" style={{ backgroundImage: `url('${media.hero}')` }} />
-        <video className="landing-video absolute inset-0 -z-10 h-full w-full object-cover" autoPlay muted loop playsInline preload="metadata" poster={media.hero} aria-label="Construction site background video">
+        {videoEnabled && <video className="landing-video absolute inset-0 -z-10 h-full w-full object-cover" autoPlay muted loop playsInline preload="metadata" poster={media.hero} aria-label="Construction site background video">
           <source src="https://videos.pexels.com/video-files/10810477/10810477-hd_1920_1080_30fps.mp4" type="video/mp4" />
-        </video>
+        </video>}
         <div className="absolute inset-0 -z-10 bg-gradient-to-r from-navy-950/95 via-navy-950/75 to-navy-950/30" />
         <div className="absolute inset-0 -z-10 bg-gradient-to-t from-navy-950/70 via-transparent to-navy-950/15" />
         <div className="absolute inset-0 -z-10 opacity-[.11]" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,.18) 1px, transparent 1px),linear-gradient(90deg,rgba(255,255,255,.18) 1px,transparent 1px)', backgroundSize: '74px 74px', maskImage: 'linear-gradient(90deg,black,transparent 85%)' }} />
@@ -100,6 +103,10 @@ export default function LandingPage() {
             <div className="mb-7 inline-flex items-center gap-2.5 rounded-full border border-amber-300/30 bg-black/25 px-4 py-2 text-[10px] font-bold uppercase tracking-[.19em] text-amber-200 backdrop-blur-md"><span className="h-1.5 w-1.5 rounded-full bg-amber-300 shadow-[0_0_12px_#FBBF24]"/> Flexible commercial support for construction</div>
             <h1 className="font-display text-[42px] font-semibold leading-[1.06] tracking-[-.045em] sm:text-6xl lg:text-[72px]">More time <span className="text-amber-300">building.</span><br/>Less time measuring.</h1>
             <p className="mt-7 max-w-2xl text-lg leading-8 text-white/75 sm:text-xl">Outsourced estimating and quantity surveying for contractors who need reliable numbers, clear documents and extra capacity when tenders come in.</p>
+            <div className="mt-5 max-w-lg text-xs leading-6 text-white/65">
+              <button type="button" onClick={() => setVideoEnabled(!videoEnabled)} className="min-h-10 rounded-lg border border-white/25 px-3 font-semibold text-white hover:bg-white/10">{videoEnabled ? 'Disable background video' : 'Enable optional background video'}</button>
+              {!videoEnabled && <p className="mt-2">Enabling loads video from Pexels, which may use security cookies and receive your IP address. <Link to="/legal/cookies" className="underline underline-offset-2">Cookies &amp; video choices</Link></p>}
+            </div>
             <div className="mt-9 flex flex-col gap-3 sm:flex-row"><Link to="/request-quote" className="group inline-flex items-center justify-center gap-3 rounded-lg bg-amber-400 px-6 py-4 text-sm font-extrabold text-navy-900 shadow-xl shadow-black/20 transition hover:-translate-y-1 hover:bg-amber-300">Send your drawings <ArrowRight size={17} className="transition group-hover:translate-x-1"/></Link><a href="#services" className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/25 bg-white/[.06] px-6 py-4 text-sm font-bold text-white backdrop-blur-md transition hover:bg-white/15">Explore our services <ArrowDown size={15}/></a></div>
             <div className="mt-9 flex flex-wrap items-center gap-x-6 gap-y-3 text-xs font-medium text-white/65"><span className="flex items-center gap-2"><CheckCircle2 size={15} className="text-amber-300"/> Fixed-fee quotations</span><span className="flex items-center gap-2"><CheckCircle2 size={15} className="text-amber-300"/> Flexible extra capacity</span><span className="flex items-center gap-2"><CheckCircle2 size={15} className="text-amber-300"/> Commercial support across projects</span></div>
           </div>
@@ -126,7 +133,18 @@ export default function LandingPage() {
 
       <section id="how" className="scroll-mt-20 bg-navy-900 px-5 py-20 text-white sm:px-8 lg:px-10 lg:py-24"><div className="mx-auto max-w-[1400px]"><div className="flex flex-col justify-between gap-5 md:flex-row md:items-end"><div><p className="mb-4 flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[.22em] text-amber-300"><span className="h-px w-7 bg-amber-300"/> How it works</p><h2 className="font-display text-4xl font-semibold tracking-[-.04em] sm:text-5xl">Simple from first drawing<br className="hidden sm:block"/> to final deliverable.</h2></div><p className="max-w-sm text-sm leading-7 text-white/55">Clear steps. Agreed expectations. No surprises about what is included.</p></div><div className="mt-14 grid gap-0 md:grid-cols-4">{process.map((item, i) => <div key={item.number} className="relative border-t border-white/15 py-7 md:border-t md:px-6 md:first:pl-0 md:last:pr-0"><div className="mb-7 flex items-center justify-between"><span className="font-display text-4xl font-light text-amber-300/80">{item.number}</span>{i < 3 && <MoveRight className="hidden text-white/25 md:block" size={22}/>}</div><h3 className="font-display text-xl font-semibold">{item.title}</h3><p className="mt-3 max-w-xs text-sm leading-6 text-white/55">{item.text}</p></div>)}</div><div className="mt-6 rounded-2xl border border-white/10 bg-white/[.045] p-5 sm:flex sm:items-center sm:justify-between sm:p-7"><div className="flex items-start gap-4"><div className="rounded-xl bg-amber-300/10 p-3 text-amber-300"><UploadCloud size={22}/></div><div><div className="font-display text-lg font-semibold">Have a tender deadline coming up?</div><p className="mt-1 text-sm text-white/55">Send the information you have. We’ll review the scope and come back with next steps.</p></div></div><Link to="/request-quote" className="mt-5 inline-flex shrink-0 items-center gap-2 rounded-lg bg-amber-400 px-5 py-3 text-xs font-extrabold text-navy-900 transition hover:bg-amber-300 sm:mt-0">Start a quote request <ArrowRight size={15}/></Link></div></div></section>
 
-      <section id="pricing" className="scroll-mt-20 bg-white px-5 py-16 sm:px-8 lg:px-10 lg:py-20"><div className="mx-auto grid max-w-[1400px] gap-8 rounded-2xl border border-black/[.06] bg-surface-50 p-6 sm:p-9 lg:grid-cols-[1fr_auto] lg:items-center lg:p-12"><div><p className="mb-3 text-[10px] font-extrabold uppercase tracking-[.22em] text-amber-800">Straightforward pricing</p><h2 className="font-display text-3xl font-semibold tracking-[-.04em] sm:text-4xl">Fixed-fee work. Agreed before we start.</h2><p className="mt-4 max-w-2xl text-sm leading-7 text-slate-600">Every project is different. We review the scope, the information supplied and your deadline, then provide a quotation setting out the deliverables, programme and fixed professional fee.</p><div className="mt-5 flex flex-wrap gap-3 text-[11px] font-bold text-slate-600"><span className="rounded-full bg-white px-3 py-2">Scope agreed</span><span className="rounded-full bg-white px-3 py-2">Programme confirmed</span><span className="rounded-full bg-white px-3 py-2">Fee confirmed</span></div><div className="mt-6 rounded-xl border border-amber-200 bg-white p-5"><h3 className="text-sm font-bold">Tender estimate</h3><p className="mt-2 text-3xl font-extrabold text-navy-900">£450–£800</p><p className="mt-2 text-sm leading-6 text-slate-600">Final fee agreed after reviewing your drawings, scope and deadline.</p></div></div><Link to="/request-quote" className="inline-flex items-center justify-center gap-2 rounded-lg bg-navy-900 px-5 py-4 text-sm font-extrabold text-white transition hover:bg-navy-800">Request a quotation <ArrowRight size={16}/></Link></div></section>
+      <section id="pricing" className="scroll-mt-20 bg-white px-5 py-16 sm:px-8 lg:px-10 lg:py-20">
+        <div className="mx-auto max-w-[1400px]">
+          <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
+            <div><p className="mb-3 text-[10px] font-extrabold uppercase tracking-[.22em] text-amber-800">Straightforward pricing</p><h2 className="font-display text-3xl font-semibold tracking-[-.04em] sm:text-4xl">Fixed-fee work. Agreed before we start.</h2><p className="mt-4 max-w-2xl text-sm leading-7 text-slate-600">Every project is different. We review your drawings, scope and deadline, then agree the deliverables, programme and professional fee before work starts.</p></div>
+            <Link to="/request-quote" className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-navy-900 px-5 py-4 text-sm font-extrabold text-white transition hover:bg-navy-800">Request a quotation <ArrowRight size={16}/></Link>
+          </div>
+          <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {[{ title: 'Quantity take-offs', amount: 150, description: 'Measured quantities from your drawings, organised for pricing and review.' }, { title: 'Tender estimate', amount: 450, description: 'A structured estimate with pricing assumptions and a clear cost summary.' }, { title: 'Full tender support', amount: 550, description: 'Tender preparation and commercial support around your agreed submission scope.' }, { title: 'Monthly commercial support', amount: 800, monthly: true, description: 'Ongoing valuations, variations and cost reporting within an agreed monthly scope.' }].map(price => <article key={price.title} className="flex flex-col rounded-2xl border border-slate-200 bg-surface-50 p-6"><h3 className="text-sm font-bold text-navy-900">{price.title}</h3><p className="mt-4 text-xs font-semibold uppercase tracking-wider text-slate-500">From</p><p className="mt-1 text-3xl font-extrabold text-navy-900">£{price.amount}{price.monthly && <span className="text-sm font-medium text-slate-500">/month</span>}</p><p className="mt-4 flex-1 text-sm leading-6 text-slate-600">{price.description}</p><Link to="/request-quote" className="mt-6 inline-flex min-h-10 items-center gap-2 text-xs font-bold text-amber-800">Discuss this service <ArrowRight size={14}/></Link></article>)}
+          </div>
+          <p className="mt-5 text-xs leading-6 text-slate-500">Starting fees are indicative. Your final quotation confirms the scope, deliverables, programme and any applicable VAT.</p>
+        </div>
+      </section>
 
       <section id="deliverables" className="scroll-mt-24 px-5 py-20 sm:px-8 lg:px-10 lg:py-24">
         <div className="mx-auto max-w-[1400px]">

@@ -1,3 +1,4 @@
+import CookieNoticePage from './CookieNoticePage'
 ﻿import { Link, useParams } from 'react-router-dom'
 
 type LegalContent = { title: string; sections: { title: string; body: string }[] }
@@ -7,15 +8,11 @@ const content: Record<string, LegalContent> = {
     { title: 'Information we collect', body: 'We collect the contact and company details you provide, project descriptions, deadlines, drawings, specifications and other documents you send us. Our hosting and security providers may process technical information such as your IP address, browser details and request logs.' },
     { title: 'How we use information', body: 'We use information to respond to enquiries, prepare quotations, deliver agreed services, administer accounts and payments, and protect our systems. Where applicable, we rely on steps to enter or perform a contract, our legitimate interests in managing and securing our business, and legal obligations. Where consent is required, you may withdraw it by contacting us.' },
     { title: 'Sharing and international processing', body: 'Information may be processed by service providers supporting hosting, email, document storage and payments, and by advisers or authorities where necessary. We do not sell personal information. Providers may process information outside your country; where required, appropriate transfer safeguards apply. Project information is shared only where needed for the agreed work or required by law.' },
+    { title: 'External images, fonts and video', body: 'The website loads images from Unsplash and fonts from Google Fonts. Optional background video is provided by Pexels and is blocked until you enable it. Requests to these providers can disclose your IP address and browser connection information; their privacy practices apply. Enabling Pexels video may also allow Cloudflare security cookies. You can disable video through the Cookie and Browser Storage Notice. Disabling prevents future video requests but cannot undo information already disclosed.' },
     { title: 'Retention and security', body: 'We retain information for as long as needed for the enquiry, agreed work, accounting requirements and resolution of disputes, then delete or anonymise it. Retention depends on the record and applicable obligations. We take reasonable steps to protect information, but no online service can guarantee absolute security. Please avoid sending unrelated personal or sensitive information in project documents.' },
     { title: 'Your choices and rights', body: 'Depending on applicable law, you may request access, correction, deletion, restriction or portability of your information, or object to certain processing. Email enquiries@aurumite.com to make a request. We may need to verify your identity. You may complain to your local data protection authority; in the UK this is the Information Commissioner’s Office at ico.org.uk.' },
   ] },
-  cookies: { title: 'Cookie Notice', sections: [
-    { title: 'Cookies and browser storage', body: 'Cookies are small files stored on your device. Similar technologies include browser local storage. These technologies can help a website remember information and support secure access.' },
-    { title: 'Storage used by this website', body: 'The Aurum application uses local storage named aurum-auth to retain account information and an authentication token for signed-in users. It persists across browser sessions until you sign out or clear site data. This supports access to the account area. The public website code does not add advertising or analytics cookies.' },
-    { title: 'External services', body: 'Some website images load from external providers, including Unsplash. Requests to those providers disclose technical information such as your IP address and are subject to their privacy practices. Hosting and security services may also use necessary technologies to deliver and protect the website.' },
-    { title: 'Your controls', body: 'You can remove cookies and local storage through your browser’s site-data settings. Blocking or clearing account storage can sign you out or affect account functionality. If optional tracking technologies are introduced, this notice and the relevant consent controls will be updated before they are used where consent is required.' },
-  ] },
+  cookies: { title: 'Cookie and Browser Storage Notice', sections: [] },
   terms: { title: 'Terms of Use', sections: [
     { title: 'Using this website', body: 'These terms apply to your use of the Aurum Project Controls website. Use the website lawfully and do not attempt unauthorised access, interfere with its operation or upload harmful material. Contact enquiries@aurumite.com if you have questions.' },
     { title: 'Website information and samples', body: 'Website information is general guidance. Sample bills of quantities and other documents illustrate our presentation and are not project-specific advice, live quotations or documents issued for construction. Check quantities, scope, specifications, rates and tax treatment for your project before relying on any figures.' },
@@ -36,6 +33,7 @@ const content: Record<string, LegalContent> = {
 
 export default function LegalPage() {
   const { type = 'privacy' } = useParams()
+  if (type === 'cookies') return <CookieNoticePage />
   const page = content[type] || content.privacy
   return <main className="min-h-screen bg-slate-50 px-5 py-12 text-navy-900">
     <article className="mx-auto max-w-3xl rounded-2xl bg-white p-6 shadow-sm sm:p-10">
