@@ -10,6 +10,7 @@ uploads/
 test-results/
 playwright-report/
 *.zip
+.tools/
 
 # Exclude local video-production assets
 hyperframes-construction-hero/

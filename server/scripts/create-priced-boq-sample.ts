@@ -18,13 +18,13 @@ async function main() {
   const directory = path.resolve('client/public/samples')
   fs.mkdirSync(directory, { recursive: true })
   const doc = new PDFDocument({ size: 'A4', layout: 'landscape', margin: 42, bufferPages: true,
-    info: { Title: 'Sample priced Bill of Quantities', Subject: 'Published evaluation quantities and reference prices; not a live tender' } })
+    info: { Title: 'Refurbishment Building BOQ', Subject: 'Published evaluation quantities and reference prices; not a live tender' } })
   const output = fs.createWriteStream(path.join(directory, 'boq-sample.pdf'))
   doc.pipe(output)
-  const widths = [40, 294, 48, 36, 80, 90, 80, 90]
+  const widths = [40, 430, 48, 36, 100, 104]
   const xs = widths.map((_, index) => 42 + widths.slice(0, index).reduce((a, b) => a + b, 0))
   const totalWidth = widths.reduce((a, b) => a + b, 0)
-  const headers = ['Item', 'Description', 'Qty', 'Unit', 'Rate (£)', 'Amount (£)', 'Alt. rate (£)', 'Alt. amount (£)']
+  const headers = ['Item', 'Description', 'Qty', 'Unit', 'Rate (£)', 'Amount (£)']
   const align = (column: number): 'left' | 'center' | 'right' => column === 3 ? 'center' : column >= 2 ? 'right' : 'left'
   let first = true
   let y = 0
@@ -32,7 +32,7 @@ async function main() {
     if (!first) doc.addPage()
     first = false
     doc.font('Helvetica-Bold').fontSize(18).fillColor('#13234d').text(title, 42, 35, { width: totalWidth })
-    doc.font('Helvetica').fontSize(9).fillColor('#64748b').text('SAMPLE • Costed housing refurbishment basket • GBP • Revision 02', 42, 61, { width: totalWidth })
+    doc.font('Helvetica').fontSize(9).fillColor('#64748b').text('Refurbishment Building BOQ • SAMPLE • Historical GBP rates • Revision 03', 42, 61, { width: totalWidth })
     y = 91
   }
   function tableHeader() {
@@ -57,37 +57,21 @@ async function main() {
     page(`Bill ${index + 1} • ${section}`)
     tableHeader()
     const items = data.items.filter(item => item.section === section)
-    items.forEach((item, itemIndex) => row([item.ref, item.description, String(item.quantity), item.unit === 'm2' ? 'm²' : item.unit, money(item.ratePence), money(amount(item)), money(item.alternativeRatePence), money(amount(item, true))], itemIndex))
+    items.forEach((item, itemIndex) => row([item.ref, item.description, String(item.quantity), item.unit === 'm2' ? 'm²' : item.unit, money(item.ratePence), money(amount(item))], itemIndex))
     const [primary, alternate] = totals(items)
-    row(['', 'Carried to summary', '', '', '', money(primary), '', money(alternate)], 0, true)
+    row(['', 'Carried to summary', '', '', '', money(primary)], 0, true)
     doc.font('Helvetica').fontSize(9).fillColor('#64748b').text('Quantity and price references are listed in the source register. Section totals reconcile with the main summary.', 42, y + 18, { width: totalWidth })
   }
   page('Main summary')
   tableHeader()
   sections.forEach((section, index) => {
     const [primary, alternative] = totals(data.items.filter(item => item.section === section))
-    row([String(index + 1), section, '', '', '', money(primary), '', money(alternative)], index)
+    row([String(index + 1), section, '', '', '', money(primary)], index)
   })
   const [primary, alternative] = totals(data.items)
-  row(['', 'Total of selected works', '', '', '', money(primary), '', money(alternative)], 0, true)
+  row(['', 'Total of selected works', '', '', '', money(primary)], 0, true)
   y += 18
-  doc.font('Helvetica').fontSize(10).fillColor('#556174').text('The two totals are separate price comparisons; they must not be added together. Only the selected work basket is totalled. VAT is not calculated in this example.', 42, y, { width: totalWidth })
-  page('Basis and source register')
-  doc.font('Helvetica-Bold').fontSize(12).fillColor('#13234d').text('What this sample demonstrates', 42, y)
-  doc.font('Helvetica').fontSize(10).fillColor('#556174').text('A complete priced basket with itemised quantities, two source rate sets, trade totals and a reconciled summary. This is a published evaluation example, not a completed client project or a live quotation.', 42, y + 22, { width: totalWidth })
-  y = doc.y + 20
-  doc.font('Helvetica-Bold').fontSize(12).fillColor('#13234d').text('Pricing and quantity basis', 42, y)
-  doc.font('Helvetica').fontSize(10).fillColor('#556174').text('Evaluation quantities come from the source schedules. Rates are rounded to pence before multiplication. Each amount equals quantity × rate; totals sum the displayed amounts. Reference prices are historical and have not been escalated to current market levels.', 42, y + 22, { width: totalWidth })
-  y = doc.y + 18
-  for (const source of data.sources) {
-    doc.font('Helvetica-Bold').fontSize(10).fillColor('#13234d').text(`${source.id} • Published pricing schedule`, 42, y)
-    doc.font('Helvetica').fontSize(8).fillColor('#315da2').text(source.url, 42, y + 16, { width: totalWidth, link: source.url })
-    y = doc.y + 15
-  }
-  doc.font('Helvetica').fontSize(9).fillColor('#556174').text(`Retrieved ${data.retrieved}. The Excel companion contains the full cell-reference register and calculation formulas. The council's framework specifications govern the original rates; this excerpt does not reproduce those specifications.`, 42, y, { width: totalWidth })
-  y = doc.y + 20
-  doc.font('Helvetica-Bold').fontSize(12).fillColor('#13234d').text('Before using a BOQ for a real tender', 42, y)
-  doc.font('Helvetica').fontSize(10).fillColor('#556174').text('Replace evaluation quantities with measured project quantities; confirm scope, access, specifications, taxes and current prices. Do not add separate preliminaries or overheads without checking what is included in the agreed rates.', 42, y + 22, { width: totalWidth })
+  doc.font('Helvetica').fontSize(10).fillColor('#556174').text('Only the selected refurbishment work basket is totalled. Quantities are published evaluation quantities and rates are historical reference prices. VAT is not calculated. Confirm scope, measurements and current prices for a live project.', 42, y, { width: totalWidth })
   const pages = doc.bufferedPageRange()
   for (let index = 0; index < pages.count; index++) {
     doc.switchToPage(index)
@@ -106,7 +90,7 @@ async function main() {
   priced.addRow(['Source quantities; historical reference rates; amounts calculated from rates rounded to pence.'])
   priced.mergeCells('A2:H2')
   priced.addRow([])
-  priced.addRow(headers)
+  priced.addRow([...headers, 'Alt. rate (?)', 'Alt. amount (?)'])
   for (const item of data.items) {
     const row = priced.addRow([item.ref, item.description, item.quantity, item.unit, item.ratePence / 100, null, item.alternativeRatePence / 100, null])
     row.getCell(6).value = { formula: `ROUND(C${row.number}*E${row.number},2)`, result: amount(item) / 100 }
@@ -147,7 +131,7 @@ async function main() {
     sheet.getRow(headerRow).eachCell(cell => { cell.font = { bold: true, color: { argb: 'FFFFFFFF' } }; cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF13234D' } } })
   }
   workbook.calcProperties.fullCalcOnLoad = true
-  await workbook.xlsx.writeFile(path.join(directory, 'boq-worked-sample.xlsx'))
+  await workbook.xlsx.writeFile(path.resolve('server/data/boq-worked-sample.xlsx'))
   console.log(`Created ${pages.count}-page priced sample and formula-linked Excel. Totals: £${money(primary)} / £${money(alternative)}.`)
 }
 main().catch(error => { console.error(error); process.exitCode = 1 })

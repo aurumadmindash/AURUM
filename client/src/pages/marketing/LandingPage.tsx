@@ -24,8 +24,8 @@ const services = [
 ]
 const audiences = ['Building contractors', 'Fit-out & refurbishment', 'Joinery contractors', 'Groundworks', 'Roofing & decorating', 'Specialist subcontractors']
 const boqSamples = [
-  { id: '1', title: 'Refurbishment estimate', description: 'A priced example with published reference rates and a reconciled cost summary.', pages: 6, preview: 'boq-sample', workbook: 'boq-worked-sample' },
-  { id: '2', title: 'Five-dwelling bill of quantities', description: 'A detailed template with modelled quantities, supplied pound rates and a measurement basis.', pages: 32, preview: 'boq-client-completed', workbook: 'boq-client-completed' },
+  { id: '1', title: 'Refurbishment Building BOQ', description: 'A priced refurbishment example with reference rates, trade bills and a reconciled cost summary.', pages: 5, preview: 'boq-sample' },
+  { id: '2', title: '5 Unit 2 Bedroom Building BOQ', description: 'A complete project document with a named cover, detailed bills, cost summary and measurement basis.', pages: 33, preview: 'boq-client-completed' },
 ]
 const process = [
   { number: '01', title: 'Send your drawings', text: 'Share drawings, specifications, scope and your tender deadline.' },
@@ -150,7 +150,6 @@ export default function LandingPage() {
                 <p className="mb-5 mt-3 text-sm leading-6 text-slate-600">{sample.description}</p>
                 <div className="mt-auto flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-slate-100 pt-5">
                   <a href={`/boq-samples/${sample.id}`} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-navy-900 px-4 py-3 text-xs font-bold text-white transition hover:bg-navy-800" aria-label={`Read sample ${sample.id}`}>View sample <ArrowUpRight size={15}/></a>
-                  <a href={`/samples/${sample.workbook}.xlsx`} download className="inline-flex min-h-11 items-center gap-2 text-xs font-semibold text-slate-600 transition hover:text-amber-800" aria-label={`Download sample ${sample.id} Excel workbook`}><FileSpreadsheet size={16}/> Download Excel</a>
                 </div>
               </div>
             </article>)}

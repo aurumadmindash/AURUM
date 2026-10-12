@@ -15,17 +15,31 @@ async function main() {
   fs.mkdirSync(path.dirname(destination), { recursive: true })
   const output = fs.createWriteStream(destination)
   const doc = new PDFDocument({ size: 'A4', layout: 'landscape', margin: 42, bufferPages: true,
-    info: { Title: 'Detailed Sample Bill of Quantities',
+    info: { Title: '5 Unit 2 Bedroom Building BOQ',
       Subject: 'Complete workbook content with original rates and amounts in GBP' } })
   doc.pipe(output)
-  const widths = [26, 350, 40, 34, 65, 80, 65, 98]
+  const widths = [30, 447, 55, 40, 105, 81]
   const xs = widths.map((_, i) => 42 + widths.slice(0, i).reduce((a, b) => a + b, 0))
   const totalWidth = widths.reduce((a, b) => a + b, 0)
-  const headings = ['Item', 'Description', 'Qty', 'Unit', 'Rate (£)', 'Amount (£)', 'Alt. rate (£)', 'Alt. amount (£)']
+  const headings = ['Item', 'Description', 'Qty', 'Unit', 'Rate (£)', 'Amount (£)']
   const alignment = (column: number): 'left' | 'center' | 'right' => column === 3 ? 'center' : column === 2 || column >= 4 ? 'right' : 'left'
   let y = 0
   let rowCount = 0
   let firstPage = true
+  if (path.basename(destination) === 'boq-client-completed.pdf') {
+    doc.rect(0, 0, doc.page.width, doc.page.height).fill('#f8fafc')
+    doc.rect(0, 0, 18, doc.page.height).fill('#b58a45')
+    doc.fillColor('#13234d').font('Helvetica-Bold').fontSize(18).text('AURUM', 62, 60)
+    doc.font('Helvetica').fontSize(10).text('PROJECT CONTROLS', 62, 86)
+    doc.fillColor('#b58a45').font('Helvetica-Bold').fontSize(11).text('SAMPLE PROJECT DOCUMENT', 62, 158)
+    doc.fillColor('#13234d').fontSize(32).text('5 Unit 2 Bedroom\nBuilding BOQ', 62, 194, { width: 700 })
+    doc.font('Helvetica').fontSize(20).text('Bill of Quantities', 62, 290)
+    doc.moveTo(62, 335).lineTo(780, 335).strokeColor('#b58a45').stroke()
+    doc.fontSize(11).text('DOCUMENT REF.   AUR-SAMPLE-BOQ-002     |     REVISION 01', 62, 357)
+    doc.text('Prepared by Aurum Project Controls', 62, 386)
+    doc.fillColor('#64748b').fontSize(10).text('Detailed bills, collections, cost summary and quantity basis.\nFive detached two-storey dwellings. Modelled quantities and supplied rates.\nIllustrative sample only; not issued for tender or construction.', 62, 432, { width: 700, lineGap: 6 })
+    firstPage = false
+  }
   function startPage() {
     if (!firstPage) doc.addPage()
     firstPage = false
@@ -56,7 +70,7 @@ async function main() {
     let group: string[][] = []
     for (let index = 3; index <= sheet.rowCount; index++) {
       const row = sheet.getRow(index)
-      const columns = [1, 2, 3, 5, 6, 7, 8, 9]
+      const columns = [1, 2, 3, 5, 6, 7]
       const original = columns.map(column => sourceText(row.getCell(column), cachedNumbers))
       if (original.every(value => !value)) continue
       // Ignore blank spacer rows that contain only zero-valued formulas.
@@ -65,7 +79,7 @@ async function main() {
       if (/\bDEVELOPMENT\b.*\b(?:MR|MRS|MISS|DR)\b/i.test(values[1])) {
         values[1] = /\bRESIDENTIAL\b/i.test(values[1]) ? 'SAMPLE RESIDENTIAL DEVELOPMENT' : 'SAMPLE DEVELOPMENT'
       }
-      for (let column = 4; column < 8; column++) {
+      for (let column = 4; column < values.length; column++) {
         if (!original[column] || original[column] === 'Unavailable') continue
         const amount = Number(original[column])
         if (!Number.isFinite(amount)) continue

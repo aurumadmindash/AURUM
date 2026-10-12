@@ -3,8 +3,8 @@ import { Link, Navigate, useParams } from 'react-router-dom'
 import { ArrowLeft, ChevronLeft, ChevronRight, Download, ZoomIn, ZoomOut } from 'lucide-react'
 
 const samples = {
-  '1': { title: 'Sample 1: priced refurbishment BOQ', pages: 6, file: 'boq-sample', workbook: 'boq-worked-sample', description: 'Published reference quantities and prices with checked calculations. For illustration only.' },
-  '2': { title: 'Sample 2: five-dwelling BOQ', pages: 32, file: 'boq-client-completed', workbook: 'boq-client-completed', description: 'Completed template with modelled quantities, supplied pound rates and a detailed quantity basis. For illustration only.' },
+  '1': { title: 'Refurbishment Building BOQ', pages: 5, file: 'boq-sample', description: 'Priced refurbishment example with historical reference rates, detailed trade bills and a cost summary. For illustration only.' },
+  '2': { title: '5 Unit 2 Bedroom Building BOQ', pages: 33, file: 'boq-client-completed', description: 'Complete bill of quantities with a project cover, cost summary and detailed quantity basis. Modelled quantities and supplied rates. For illustration only.' },
 }
 
 export default function BoqSamplePage() {
@@ -14,7 +14,7 @@ export default function BoqSamplePage() {
   return <SampleViewer key={sample} data={data} />
 }
 
-function SampleViewer({ data }: { data: typeof samples['1'] }) {
+function SampleViewer({ data }: { data: typeof samples['2'] }) {
   const [page, setPage] = useState(1)
   const [zoom, setZoom] = useState(100)
   const [failedPage, setFailedPage] = useState<number | null>(null)
@@ -26,7 +26,6 @@ function SampleViewer({ data }: { data: typeof samples['1'] }) {
       <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">{data.description}</p>
       <div className="mt-5 grid gap-3 sm:flex sm:flex-wrap">
         <a href={`/samples/${data.file}.pdf`} download className={button}><Download size={17} /> Download PDF</a>
-        <a href={`/samples/${data.workbook}.xlsx`} download className={button}><Download size={17} /> Download Excel</a>
       </div>
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-3">
         <div className="flex items-center gap-2">
@@ -42,7 +41,7 @@ function SampleViewer({ data }: { data: typeof samples['1'] }) {
       </div>
       <p className="my-3 text-xs text-slate-600">Zoom in to read the figures, then swipe across the page.</p>
       <div className="overflow-x-auto rounded-lg border border-slate-200 bg-slate-200 p-2" tabIndex={0} aria-label="BOQ page preview">
-        {failedPage === page ? <p role="alert" className="bg-white p-6 text-sm">This page could not load. You can download the PDF above to read the full sample.</p> : <img key={page} src={`/samples/previews/${data.file}/page-${page}.webp`} alt={`${data.title}, page ${page} of ${data.pages}. Full document text is available in the PDF and Excel downloads.`} width={1684} height={1190} className="h-auto max-w-none bg-white" style={{ width: `${zoom}%` }} onError={() => setFailedPage(page)} />}
+        {failedPage === page ? <p role="alert" className="bg-white p-6 text-sm">This page could not load. You can download the PDF above to read the full sample.</p> : <img key={page} src={`/samples/previews/${data.file}/page-${page}.webp`} alt={`${data.title}, page ${page} of ${data.pages}. Full document text is available in the PDF download.`} width={1684} height={1190} className="h-auto max-w-none bg-white" style={{ width: `${zoom}%` }} onError={() => setFailedPage(page)} />}
       </div>
     </div>
   </main>

@@ -265,7 +265,7 @@ async function main() {
     })
     if (index === 1) r.eachCell(c => { c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF13234D' } }; c.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FFFFFFFF' } } })
   })
-  const destination = path.resolve('client/public/samples/boq-client-completed.xlsx')
+  const destination = path.resolve('server/data/boq-client-completed.xlsx')
   fs.mkdirSync(path.dirname(destination), { recursive: true })
   await workbook.xlsx.writeFile(destination)
   fs.writeFileSync('server/data/boq-client-measurements.json', JSON.stringify({ basis: notes, measurements, buildingTotal: calculate(building, 'G965'), externalTotal: calculate(external, 'G260'), totalWithSourceVat: calculate(summary, 'G45') }, null, 2) + '\n')
