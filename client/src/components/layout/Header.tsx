@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { LogOut, Menu } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
-import { useMediaConsentStore } from '../../store/mediaConsentStore'
+import { useCookieConsentStore } from '../../store/cookieConsentStore'
 
 const roleLabelMap: Record<string, string> = {
   ADMIN: 'Admin',
@@ -12,7 +12,7 @@ const roleLabelMap: Record<string, string> = {
 export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
   const { user, logout } = useAuthStore()
   const navigate = useNavigate()
-  const openCookieSettings = useMediaConsentStore(s => s.openSettings)
+  const openCookieSettings = useCookieConsentStore(s => s.openSettings)
 
   return (
     <header className="h-14 bg-white border-b border-slate-100 flex items-center justify-between px-4 lg:px-6 shrink-0 gap-3">

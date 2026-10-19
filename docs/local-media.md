@@ -2,7 +2,7 @@
 
 On 19 October 2026, the five externally referenced Unsplash images and Pexels background video were downloaded into `client/public/landing`. Google Fonts files and their stylesheet were downloaded into `client/public/fonts`, with the Inter and Montserrat SIL Open Font License notices retained alongside them.
 
-The website references these files using same-origin paths. No Google Fonts preconnect or remote stylesheet remains. The video stays optional and uses the existing media preference. Cookie and privacy text describes the local configuration rather than implying that loading the video sets Pexels/Cloudflare cookies.
+The website references these files using same-origin paths. No Google Fonts preconnect or remote stylesheet remains. The locally hosted video plays independently of cookie preferences. The video enable/disable control was removed; reduced-motion styling remains available through the browser/operating-system preference. Cookie and privacy text describes the local configuration rather than implying that loading the video sets Pexels/Cloudflare cookies.
 
 `media-sources.json` records each original URL, destination, byte count and SHA-256 checksum. The video is approximately 2.8 MB and is served as a static asset; it does not pass through an API function.
 

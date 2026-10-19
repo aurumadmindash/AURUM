@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 
-const KEY = 'aurum-media-preference'
+const KEY = 'aurum-cookie-preference'
 const DURATION = 180 * 24 * 60 * 60 * 1000
 function storedChoice() {
   try {
@@ -9,11 +9,12 @@ function storedChoice() {
     const choice = JSON.parse(raw)
     if (choice.version === 1 && typeof choice.enabled === 'boolean' && Number.isFinite(choice.expiresAt) && choice.expiresAt > Date.now()) return choice.enabled
     localStorage.removeItem(KEY)
-  } catch { /* When storage is unavailable, external video stays disabled. */ }
+  } catch { /* When storage is unavailable, the choice applies only to this visit. */ }
   return null
 }
+try { localStorage.removeItem('aurum-media-preference') } catch { /* Storage may be unavailable. */ }
 const initialChoice = storedChoice()
-export const useMediaConsentStore = create<{
+export const useCookieConsentStore = create<{
   enabled: boolean; hasChoice: boolean; settingsOpen: boolean
   setEnabled: (enabled: boolean) => void; openSettings: () => void; closeSettings: () => void
 }>((set) => ({
@@ -30,6 +31,6 @@ export const useMediaConsentStore = create<{
 window.addEventListener('storage', event => {
   if (event.key === KEY || event.key === null) {
     const choice = storedChoice()
-    useMediaConsentStore.setState({ enabled: choice === true, hasChoice: choice !== null })
+    useCookieConsentStore.setState({ enabled: choice === true, hasChoice: choice !== null })
   }
 })

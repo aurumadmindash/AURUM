@@ -12,8 +12,8 @@ function fixture() {
 async function setup(page: Page) {
   let job = fixture()
   let saveFails = false
-  await page.addInitScript(() => localStorage.setItem('aurum-media-preference', JSON.stringify({ version: 1, enabled: false, expiresAt: Date.now() + 86400000 })))
-  await page.addInitScript(() => { if (!localStorage.getItem('aurum-auth')) localStorage.setItem('aurum-auth', JSON.stringify({ state: { token: 'test-token', user: { id: 'admin', name: 'Aurum Admin', email: 'admin@example.com', role: 'ADMIN' } }, version: 0 })); })
+  await page.addInitScript(() => localStorage.setItem('aurum-cookie-preference', JSON.stringify({ version: 1, enabled: false, expiresAt: Date.now() + 86400000 })))
+  await page.addInitScript(() => { if (!sessionStorage.getItem('aurum-auth')) sessionStorage.setItem('aurum-auth', JSON.stringify({ state: { token: 'test-token', user: { id: 'admin', name: 'Aurum Admin', email: 'admin@example.com', role: 'ADMIN' } }, version: 0 })); })
   await page.route('**/api/**', async route => {
     const request = route.request(), url = new URL(request.url())
     const pathname = url.pathname
@@ -120,6 +120,6 @@ test('shows a recoverable job-load error and denies viewers access', async ({ pa
   await page.route('**/api/business/quotes/job-1', route => route.fulfill({ status: 404, json: { message: 'Job not found' } }))
   await page.goto('/jobs/job-1'); await expect(page.getByRole('alert')).toContainText('Job not found')
   await expect(page.getByRole('button', { name: 'Try again' })).toBeVisible()
-  await page.evaluate(() => localStorage.setItem('aurum-auth', JSON.stringify({ state: { token: 'viewer-token', user: { id: 'viewer', name: 'Viewer', email: 'viewer@example.com', role: 'VIEWER' } }, version: 0 })))
+  await page.evaluate(() => sessionStorage.setItem('aurum-auth', JSON.stringify({ state: { token: 'viewer-token', user: { id: 'viewer', name: 'Viewer', email: 'viewer@example.com', role: 'VIEWER' } }, version: 0 })))
   await page.reload(); await expect(page.getByRole('alert')).toContainText('administrators and commercial managers')
 })

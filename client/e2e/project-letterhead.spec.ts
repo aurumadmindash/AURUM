@@ -4,8 +4,8 @@ const logo = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQV
 const project = { id: 'site', name: 'Test site', contractType: 'NEC4', isActive: true, createdAt: '2026-10-10', companyName: 'Site Company', companyEmail: 'office@example.com', companyWebsite: 'example.com', companyLogo: `data:image/png;base64,${logo.toString('base64')}`, members: [{ role: 'ADMIN', userId: 'owner', user: { id: 'owner', name: 'Owner' } }], _count: { earlyWarnings: 0, compensationEvents: 0, riskItems: 0, notices: 0 } }
 
 test.beforeEach(async ({ page }) => {
-  await page.addInitScript(() => localStorage.setItem('aurum-media-preference', JSON.stringify({ version: 1, enabled: false, expiresAt: Date.now() + 86400000 })))
-  await page.addInitScript(() => localStorage.setItem('aurum-auth', JSON.stringify({ state: { user: { id: 'owner', name: 'Owner', email: 'owner@example.com', role: 'ADMIN' }, token: 'test' }, version: 0 })))
+  await page.addInitScript(() => localStorage.setItem('aurum-cookie-preference', JSON.stringify({ version: 1, enabled: false, expiresAt: Date.now() + 86400000 })))
+  await page.addInitScript(() => sessionStorage.setItem('aurum-auth', JSON.stringify({ state: { user: { id: 'owner', name: 'Owner', email: 'owner@example.com', role: 'ADMIN' }, token: 'test' }, version: 0 })))
   await page.route('**/api/**', (route) => route.fulfill({ json: [] }))
 })
 

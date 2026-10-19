@@ -17,7 +17,7 @@ for (const accepted of [false, true]) {
     await page.screenshot({ path: testInfo.outputPath('cookie-popup-desktop.png') })
     await popup.getByRole('button', { name: accepted ? 'Accept' : 'Reject' }).click()
     await expect(popup).not.toBeVisible()
-    expect(await page.evaluate(() => JSON.parse(localStorage.getItem('aurum-media-preference')!).enabled)).toBe(accepted)
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem('aurum-cookie-preference')!).enabled)).toBe(accepted)
     await page.reload()
     await expect(page.getByRole('heading', { name: /More time/ })).toBeVisible()
     await expect(popup).not.toBeVisible()
@@ -34,7 +34,7 @@ for (const accepted of [false, true]) {
 
 test('cookie notice can be read without accepting and choices synchronise across tabs', async ({ page, context }) => {
   await page.addInitScript(() => {
-    if (!localStorage.getItem('aurum-auth')) localStorage.setItem('aurum-auth', JSON.stringify({ state: { token: 'test', user: { id: 'admin', name: 'Admin', email: 'admin@example.com', role: 'ADMIN' } }, version: 0 }))
+    if (!sessionStorage.getItem('aurum-auth')) sessionStorage.setItem('aurum-auth', JSON.stringify({ state: { token: 'test', user: { id: 'admin', name: 'Admin', email: 'admin@example.com', role: 'ADMIN' } }, version: 0 }))
   })
   await page.route('**/api/**', route => route.fulfill({ json: [] }))
   await page.goto('/')
@@ -44,48 +44,46 @@ test('cookie notice can be read without accepting and choices synchronise across
   await page.getByRole('button', { name: 'Accept', exact: true }).click()
   const other = await context.newPage()
   await other.goto('/legal/cookies')
-  await expect(other.getByRole('status')).toHaveText('Background video is enabled.')
+  await expect(other.getByRole('status')).toHaveText('Optional cookies accepted.')
   await page.getByRole('button', { name: 'Reject', exact: true }).click()
-  await expect(other.getByRole('status')).toHaveText('Background video is disabled.')
+  await expect(other.getByRole('status')).toHaveText('Optional cookies rejected.')
 })
 
-test('blocks optional media until consent and remembers withdrawal', async ({ page }) => {
+test('local video remains available before and after cookie rejection', async ({ page }) => {
   const mediaRequests: string[] = []
   page.on('request', request => { if (new URL(request.url()).pathname === '/landing/aurum-site-video.mp4') mediaRequests.push(request.url()) })
   await page.goto('/')
   await expect(page.getByRole('dialog', { name: 'Your cookie choices' })).toBeVisible()
-  await expect(page.locator('video')).toHaveCount(0)
-  expect(mediaRequests).toHaveLength(0)
-  expect(await page.evaluate(() => localStorage.getItem('aurum-media-preference'))).toBeNull()
+  await expect(page.locator('video')).toHaveCount(1)
+  expect(await page.evaluate(() => localStorage.getItem('aurum-cookie-preference'))).toBeNull()
   await page.getByRole('dialog').getByRole('button', { name: 'Accept' }).click()
   await expect(page.locator('video')).toHaveCount(1)
   await expect.poll(() => mediaRequests.length).toBeGreaterThan(0)
-  const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('aurum-media-preference')!))
+  const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('aurum-cookie-preference')!))
   expect(stored.enabled).toBe(true)
   expect(stored.expiresAt).toBeGreaterThan(Date.now())
   await page.goto('/legal/cookies')
   await expect(page.getByRole('heading', { name: 'Cookie and Browser Storage Notice', exact: true })).toBeVisible()
-  await expect(page.getByRole('status')).toHaveText('Background video is enabled.')
+  await expect(page.getByRole('status')).toHaveText('Optional cookies accepted.')
   await page.getByRole('button', { name: 'Reject' }).click()
-  await expect(page.getByRole('status')).toHaveText('Background video is disabled.')
+  await expect(page.getByRole('status')).toHaveText('Optional cookies rejected.')
   const before = mediaRequests.length
   await page.goto('/')
-  await expect(page.locator('video')).toHaveCount(0)
-  expect(mediaRequests).toHaveLength(before)
-  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('aurum-media-preference')!).enabled)).toBe(false)
+  await expect(page.locator('video')).toHaveCount(1)
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('aurum-cookie-preference')!).enabled)).toBe(false)
 })
 
-test('expired or malformed media choices never enable external video', async ({ page }) => {
-  await page.addInitScript(() => localStorage.setItem('aurum-media-preference', JSON.stringify({ version: 1, enabled: true, expiresAt: Date.now() - 1000 })))
+test('expired choices prompt again without disabling local video', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('aurum-cookie-preference', JSON.stringify({ version: 1, enabled: true, expiresAt: Date.now() - 1000 })))
   await page.goto('/')
   await expect(page.getByRole('dialog', { name: 'Your cookie choices' })).toBeVisible()
-  await expect(page.locator('video')).toHaveCount(0)
-  expect(await page.evaluate(() => localStorage.getItem('aurum-media-preference'))).toBeNull()
+  await expect(page.locator('video')).toHaveCount(1)
+  expect(await page.evaluate(() => localStorage.getItem('aurum-cookie-preference'))).toBeNull()
 })
 
 test('sign-out deletes the account entry and its token', async ({ page }) => {
   await page.addInitScript(() => {
-    if (!localStorage.getItem('aurum-auth')) localStorage.setItem('aurum-auth', JSON.stringify({ state: { token: 'test-login-token', user: { id: 'admin', name: 'Aurum Admin', email: 'admin@example.com', role: 'ADMIN' } }, version: 0 }))
+    if (!sessionStorage.getItem('aurum-auth')) sessionStorage.setItem('aurum-auth', JSON.stringify({ state: { token: 'test-login-token', user: { id: 'admin', name: 'Aurum Admin', email: 'admin@example.com', role: 'ADMIN' } }, version: 0 }))
   })
   await page.route('**/api/**', route => route.fulfill({ json: [] }))
   await page.goto('/jobs')
@@ -93,7 +91,7 @@ test('sign-out deletes the account entry and its token', async ({ page }) => {
   await expect(page.getByRole('dialog')).not.toBeVisible()
   await page.getByTitle('Sign out', { exact: true }).click()
   await expect(page).toHaveURL(/\/login$/)
-  expect(await page.evaluate(() => localStorage.getItem('aurum-auth'))).toBeNull()
+  expect(await page.evaluate(() => sessionStorage.getItem('aurum-auth'))).toBeNull()
 })
 
 test('cookie inventory, privacy disclosures and new prices are readable on mobile', async ({ page }) => {
