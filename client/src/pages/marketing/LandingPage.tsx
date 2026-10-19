@@ -11,11 +11,11 @@ import { useMediaConsentStore } from '../../store/mediaConsentStore'
 
 const media = {
   hero: '/landing/aurum-hero-site.jpg',
-  takeoff: 'https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&w=1000&q=85',
-  estimate: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=1000&q=85',
-  tender: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1000&q=85',
-  commercial: 'https://images.unsplash.com/photo-1511818966892-d7d671e672a2?auto=format&fit=crop&w=1000&q=85',
-  detail: 'https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?auto=format&fit=crop&w=1400&q=85',
+  takeoff: '/landing/aurum-takeoff.jpg',
+  estimate: '/landing/aurum-estimate.jpg',
+  tender: '/landing/aurum-tender.jpg',
+  commercial: '/landing/aurum-commercial.jpg',
+  detail: '/landing/aurum-detail.jpg',
 }
 
 const services = [
@@ -93,7 +93,7 @@ export default function LandingPage() {
       <section className="relative isolate flex min-h-[690px] items-center overflow-hidden bg-navy-900 text-white lg:min-h-[760px]">
         <div className="absolute inset-0 -z-20 bg-cover bg-center" style={{ backgroundImage: `url('${media.hero}')` }} />
         {videoEnabled && <video className="landing-video absolute inset-0 -z-10 h-full w-full object-cover" autoPlay muted loop playsInline preload="metadata" poster={media.hero} aria-label="Construction site background video">
-          <source src="https://videos.pexels.com/video-files/10810477/10810477-hd_1920_1080_30fps.mp4" type="video/mp4" />
+          <source src="/landing/aurum-site-video.mp4" type="video/mp4" />
         </video>}
         <div className="absolute inset-0 -z-10 bg-gradient-to-r from-navy-950/95 via-navy-950/75 to-navy-950/30" />
         <div className="absolute inset-0 -z-10 bg-gradient-to-t from-navy-950/70 via-transparent to-navy-950/15" />
@@ -105,7 +105,7 @@ export default function LandingPage() {
             <p className="mt-7 max-w-2xl text-lg leading-8 text-white/75 sm:text-xl">Outsourced estimating and quantity surveying for contractors who need reliable numbers, clear documents and extra capacity when tenders come in.</p>
             <div className="mt-5 max-w-lg text-xs leading-6 text-white/65">
               <button type="button" onClick={() => setVideoEnabled(!videoEnabled)} className="min-h-10 rounded-lg border border-white/25 px-3 font-semibold text-white hover:bg-white/10">{videoEnabled ? 'Disable background video' : 'Enable optional background video'}</button>
-              {!videoEnabled && <p className="mt-2">Enabling loads video from Pexels, which may use security cookies and receive your IP address. <Link to="/legal/cookies" className="underline underline-offset-2">Cookies &amp; video choices</Link></p>}
+              {!videoEnabled && <p className="mt-2">The background video is hosted by Aurum. Enabling it does not connect to a third-party media provider. <Link to="/legal/cookies" className="underline underline-offset-2">Cookies &amp; video choices</Link></p>}
             </div>
             <div className="mt-9 flex flex-col gap-3 sm:flex-row"><Link to="/request-quote" className="group inline-flex items-center justify-center gap-3 rounded-lg bg-amber-400 px-6 py-4 text-sm font-extrabold text-navy-900 shadow-xl shadow-black/20 transition hover:-translate-y-1 hover:bg-amber-300">Send your drawings <ArrowRight size={17} className="transition group-hover:translate-x-1"/></Link><a href="#services" className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/25 bg-white/[.06] px-6 py-4 text-sm font-bold text-white backdrop-blur-md transition hover:bg-white/15">Explore our services <ArrowDown size={15}/></a></div>
             <div className="mt-9 flex flex-wrap items-center gap-x-6 gap-y-3 text-xs font-medium text-white/65"><span className="flex items-center gap-2"><CheckCircle2 size={15} className="text-amber-300"/> Fixed-fee quotations</span><span className="flex items-center gap-2"><CheckCircle2 size={15} className="text-amber-300"/> Flexible extra capacity</span><span className="flex items-center gap-2"><CheckCircle2 size={15} className="text-amber-300"/> Commercial support across projects</span></div>

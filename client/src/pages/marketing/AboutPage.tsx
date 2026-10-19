@@ -46,6 +46,7 @@ export default function AboutPage() {
                 <li><span className="font-semibold text-navy-900">Commercial support</span> — valuations, variations, cost reporting and contract administration within an agreed scope.</li>
               </ul>
               <h3 className="mt-8 border-t border-slate-100 pt-7 font-display text-2xl font-semibold">Service area and contact</h3>
+              <a href="tel:+447873933154" className="mt-4 inline-flex min-h-11 items-center font-semibold text-amber-800 hover:underline">Call +44 7873 933154</a>
               <p className="mt-4 text-sm leading-7 text-slate-600">Based in Aberdeen, Scotland. Project enquiries from Aberdeen, Aberdeenshire and elsewhere in the UK are considered by agreement, including work delivered remotely. To discuss a tender or commercial support requirement, send the project details through <Link to="/request-quote" className="font-semibold text-navy-900 underline underline-offset-4">www.aurumite.com/request-quote</Link>.</p>
               <Link to="/request-quote" className="mt-7 inline-flex items-center gap-3 rounded-lg bg-navy-900 px-5 py-3.5 text-sm font-bold text-white transition hover:bg-navy-800">Discuss your project <ArrowRight size={16}/></Link>
             </div>

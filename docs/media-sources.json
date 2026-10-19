@@ -1,0 +1,145 @@
+{
+  "downloadedOn": "2026-10-19",
+  "assets": [
+    {
+      "source": "https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&w=1000&q=85",
+      "path": "client/public/landing/aurum-takeoff.jpg",
+      "bytes": 80868,
+      "sha256": "ba5fcca34fdbf3c0dda7fa24c13d746b54817fbe404ea92519cec98efc509680",
+      "contentType": "image/jpeg"
+    },
+    {
+      "source": "https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=1000&q=85",
+      "path": "client/public/landing/aurum-estimate.jpg",
+      "bytes": 228402,
+      "sha256": "0fcc72bfbf54c9327ea72d394d3e982a6ab1960959ee38045c65e22d49336dd5",
+      "contentType": "image/jpeg"
+    },
+    {
+      "source": "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1000&q=85",
+      "path": "client/public/landing/aurum-tender.jpg",
+      "bytes": 170953,
+      "sha256": "9df2d6c116f8737dedbbf611c1abf88005b92f64c0e22e2b15aeeda0934beff5",
+      "contentType": "image/jpeg"
+    },
+    {
+      "source": "https://images.unsplash.com/photo-1511818966892-d7d671e672a2?auto=format&fit=crop&w=1000&q=85",
+      "path": "client/public/landing/aurum-commercial.jpg",
+      "bytes": 175880,
+      "sha256": "8acefbf3133943ddc36d3310d5ce18449f9f07cebba0cd517fe9a155a80dbb5d",
+      "contentType": "image/jpeg"
+    },
+    {
+      "source": "https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?auto=format&fit=crop&w=1400&q=85",
+      "path": "client/public/landing/aurum-detail.jpg",
+      "bytes": 214579,
+      "sha256": "989ac4da875da3734fceda9da7511eeb5ddf1764245904bb0d7a0f6512f15a7f",
+      "contentType": "image/jpeg"
+    },
+    {
+      "source": "https://videos.pexels.com/video-files/10810477/10810477-hd_1920_1080_30fps.mp4",
+      "path": "client/public/landing/aurum-site-video.mp4",
+      "bytes": 2811284,
+      "sha256": "7fa465f44a6b761452fd2d54b8d54a86c8f2d10df60afb23a51e892ba853d21b",
+      "contentType": "video/mp4"
+    },
+    {
+      "source": "https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa2JL7SUc.woff2",
+      "path": "client/public/fonts/aurum-font-1.woff2",
+      "bytes": 25960,
+      "sha256": "ca157063339ac4ad418f214f3abfed119b0798ab4d377386ce5c9e5a7a435ebd",
+      "contentType": "font/woff2"
+    },
+    {
+      "source": "https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa0ZL7SUc.woff2",
+      "path": "client/public/fonts/aurum-font-2.woff2",
+      "bytes": 18748,
+      "sha256": "71d5ee93cc1e9f1d520a3a8b66456de18c7879d8df09d57fcd2eaff75fef0075",
+      "contentType": "font/woff2"
+    },
+    {
+      "source": "https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa2ZL7SUc.woff2",
+      "path": "client/public/fonts/aurum-font-3.woff2",
+      "bytes": 11232,
+      "sha256": "6e9e020a25f9b56d418f2c085b1d3c09725a4da23fe693a5b463064606732190",
+      "contentType": "font/woff2"
+    },
+    {
+      "source": "https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1pL7SUc.woff2",
+      "path": "client/public/fonts/aurum-font-4.woff2",
+      "bytes": 18996,
+      "sha256": "1be3448e292fbf05ffe176fe1e43f135013d50b1e7d324ad1a558f623d3bb6f6",
+      "contentType": "font/woff2"
+    },
+    {
+      "source": "https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa2pL7SUc.woff2",
+      "path": "client/public/fonts/aurum-font-5.woff2",
+      "bytes": 10252,
+      "sha256": "5c66f9e07e90c6d4ac4922cc68d60de26c17b1858e677fb5e603fce3952b3ff2",
+      "contentType": "font/woff2"
+    },
+    {
+      "source": "https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa25L7SUc.woff2",
+      "path": "client/public/fonts/aurum-font-6.woff2",
+      "bytes": 85068,
+      "sha256": "34b9c504cab7a73e37b746343a449132e56cf7b5481af2cb81dc74dcff25c956",
+      "contentType": "font/woff2"
+    },
+    {
+      "source": "https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2",
+      "path": "client/public/fonts/aurum-font-7.woff2",
+      "bytes": 48256,
+      "sha256": "3100e775e8616cd2611beecfa23a4263d7037586789b43f035236a2e6fbd4c62",
+      "contentType": "font/woff2"
+    },
+    {
+      "source": "https://fonts.gstatic.com/s/montserrat/v31/JTUSjIg1_i6t8kCHKm459WRhyzbi.woff2",
+      "path": "client/public/fonts/aurum-font-8.woff2",
+      "bytes": 26368,
+      "sha256": "0f7f5f2fbb4eae126790fe6f01659ab3ee0806e8038a941908e893020569f51a",
+      "contentType": "font/woff2"
+    },
+    {
+      "source": "https://fonts.gstatic.com/s/montserrat/v31/JTUSjIg1_i6t8kCHKm459W1hyzbi.woff2",
+      "path": "client/public/fonts/aurum-font-9.woff2",
+      "bytes": 23828,
+      "sha256": "a187b077090fe8ae3fd2d7496aabbeae604819c718a282e0afc92df72b450766",
+      "contentType": "font/woff2"
+    },
+    {
+      "source": "https://fonts.gstatic.com/s/montserrat/v31/JTUSjIg1_i6t8kCHKm459WZhyzbi.woff2",
+      "path": "client/public/fonts/aurum-font-10.woff2",
+      "bytes": 12928,
+      "sha256": "26b2403f995ed65fb49037a6498c074d3ec3c36031a69fc368c4c2180e2c01fa",
+      "contentType": "font/woff2"
+    },
+    {
+      "source": "https://fonts.gstatic.com/s/montserrat/v31/JTUSjIg1_i6t8kCHKm459Wdhyzbi.woff2",
+      "path": "client/public/fonts/aurum-font-11.woff2",
+      "bytes": 70688,
+      "sha256": "54d9a78b7ff60b689ad9f3017ffac8547b5d871afec733f6c1c3ae36577ee504",
+      "contentType": "font/woff2"
+    },
+    {
+      "source": "https://fonts.gstatic.com/s/montserrat/v31/JTUSjIg1_i6t8kCHKm459Wlhyw.woff2",
+      "path": "client/public/fonts/aurum-font-12.woff2",
+      "bytes": 37956,
+      "sha256": "06b16db7a969135d48d38c49183be7fb88d4452e2a3011957c7851941f4e4879",
+      "contentType": "font/woff2"
+    },
+    {
+      "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/inter/OFL.txt",
+      "path": "client/public/fonts/inter-OFL.txt",
+      "bytes": 4377,
+      "sha256": "5b9321a4298cfeb6b34354164a1c3afc3db114569984c502b9b35d988fd58c57",
+      "contentType": "text/plain; charset=utf-8"
+    },
+    {
+      "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/montserrat/OFL.txt",
+      "path": "client/public/fonts/montserrat-OFL.txt",
+      "bytes": 4400,
+      "sha256": "8b7141c03fa4f8d44e6345d5d4931709290f0f67875e452e95ac1fd3a027802e",
+      "contentType": "text/plain; charset=utf-8"
+    }
+  ]
+}

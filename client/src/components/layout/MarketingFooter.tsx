@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { ArrowUpRight, Mail, MapPin } from 'lucide-react'
+import { ArrowUpRight, Mail, MapPin, Phone } from 'lucide-react'
 import { useMediaConsentStore } from '../../store/mediaConsentStore'
 
 const linkClass = 'inline-flex min-h-10 items-center text-sm text-white/70 transition hover:text-amber-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-amber-300'
@@ -40,6 +40,7 @@ export default function MarketingFooter() {
           <h2 className="mb-4 text-xs font-bold uppercase tracking-[.18em] text-amber-300">Discuss your project</h2>
           <p className="text-sm leading-7 text-white/65">Send your drawings, scope and deadline. We will agree the deliverables, programme and fee with you.</p>
           <a href="mailto:enquiries@aurumite.com" className={`${linkClass} mt-3 break-all`}><Mail size={16} className="mr-2 shrink-0 text-amber-300" /> enquiries@aurumite.com</a>
+          <a href="tel:+447873933154" className={`${linkClass} mt-1`}><Phone size={16} className="mr-2 shrink-0 text-amber-300" /> +44 7873 933154</a>
           <Link to="/request-quote" className="mt-5 inline-flex min-h-11 items-center gap-3 rounded-lg bg-amber-400 px-5 py-3 text-sm font-bold text-navy-950 transition hover:bg-amber-300">Request a quote <ArrowUpRight size={17} /></Link>
         </div>
       </div>
