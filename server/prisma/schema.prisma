@@ -157,6 +157,7 @@ model EmailMessage {
   subject        String?
   textBody       String?
   htmlBody       String?
+  attachments    Json?
   provider       String                @default("RESEND")
   providerMessageId String?
   messageIdHeader  String?

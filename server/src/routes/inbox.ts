@@ -53,6 +53,7 @@ router.get('/conversations/:id', authenticate, requireRole('ADMIN', 'COMMERCIAL_
 })
 
 router.post('/resend/webhook', async (req, res) => {
+  let verifiedPayload: unknown
   try {
     const rawBody = Buffer.isBuffer(req.body) ? req.body.toString('utf8') : typeof req.body === 'string' ? req.body : JSON.stringify(req.body ?? {})
     if (!rawBody.trim()) {
@@ -61,11 +62,18 @@ router.post('/resend/webhook', async (req, res) => {
     }
 
     JSON.parse(rawBody)
-    const verifiedPayload = await verifyResendWebhookSignature(req.headers as Record<string, string | string[] | undefined>, rawBody)
+    verifiedPayload = await verifyResendWebhookSignature(req.headers as Record<string, string | string[] | undefined>, rawBody)
+  } catch {
+    res.status(400).json({ message: 'Invalid webhook payload or signature' })
+    return
+  }
+
+  try {
     const result = await processIncomingResendEmail(verifiedPayload)
     res.status(200).json(result)
-  } catch (error: any) {
-    res.status(400).json({ message: error?.message || 'Invalid webhook signature' })
+  } catch {
+    console.error('Failed to process verified Resend inbound email event.')
+    res.status(500).json({ message: 'Email processing failed; Resend may retry this event.' })
   }
 })
 

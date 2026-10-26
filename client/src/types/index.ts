@@ -54,6 +54,14 @@ export interface EmailMessage {
   subject?: string | null
   textBody?: string | null
   htmlBody?: string | null
+  attachments?: Array<{
+    id: string
+    filename: string | null
+    size: number
+    content_type: string
+    content_id: string | null
+    content_disposition: string | null
+  }> | null
   providerMessageId?: string | null
   messageIdHeader?: string | null
   inReplyTo?: string | null

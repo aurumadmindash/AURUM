@@ -64,6 +64,15 @@ export default function ConversationPage() {
               </div>
               <div className="text-sm opacity-90">{message.senderEmail || message.recipientEmail}</div>
               <div className="mt-3 whitespace-pre-wrap text-sm leading-6">{message.textBody || 'No plain-text body'}</div>
+              {!!message.attachments?.length && (
+                <ul className="mt-3 space-y-1 text-xs">
+                  {message.attachments.map((attachment) => (
+                    <li key={attachment.id}>
+                      {attachment.filename || 'Unnamed attachment'} · {Math.ceil(attachment.size / 1024)} KB
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           ))}
         </div>

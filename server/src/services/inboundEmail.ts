@@ -2,6 +2,55 @@ import { Resend } from 'resend'
 import prisma from '../config/database'
 
 export type ResendWebhookHeaders = Record<string, string | string[] | undefined>
+type ReceivedEmail = {
+  id: string
+  from: string
+  to: string[]
+  received_for: string[]
+  subject: string
+  text: string | null
+  html: string | null
+  headers: Record<string, string> | null
+  message_id: string
+  created_at: string
+  attachments: Array<{
+    id: string
+    filename: string | null
+    size: number
+    content_type: string
+    content_id: string | null
+    content_disposition: string | null
+  }>
+}
+
+async function retrieveReceivedEmail(emailId: string): Promise<ReceivedEmail> {
+  const apiKey = process.env.RESEND_API_KEY
+  if (!apiKey) {
+    throw new Error('RESEND_API_KEY is not configured.')
+  }
+
+  const { data, error } = await new Resend(apiKey).emails.receiving.get(emailId)
+  if (error) {
+    throw new Error(`Resend could not retrieve received email (${error.statusCode}).`)
+  }
+  if (!data) {
+    throw new Error('Resend returned no received email data.')
+  }
+
+  return data
+}
+
+function extractEmailAddress(value: unknown): string | null {
+  if (typeof value !== 'string') return normalizeEmailValue(value)
+  const bracketedAddress = value.match(/<([^<>]+)>/)
+  return normalizeEmailValue(bracketedAddress?.[1] ?? value)
+}
+
+function getMessageHeader(headers: Record<string, string> | null, name: string): string | null {
+  if (!headers) return null
+  const key = Object.keys(headers).find((header) => header.toLowerCase() === name.toLowerCase())
+  return key ? headers[key]?.trim() || null : null
+}
 
 export function normalizeEmailValue(value: unknown): string | null {
   if (!value) return null
@@ -104,19 +153,20 @@ export async function resolveClientAssociation(emailAddress?: string | null, pro
     return { clientId: null, projectId: null }
   }
 
-  const client = await prisma.client.findFirst({
+  const clients = await prisma.client.findMany({
     where: {
       OR: [
-        { companyEmail: normalized },
-        { clientName: normalized },
+        { companyEmail: { equals: normalized, mode: 'insensitive' } },
+        { projects: { some: { companyEmail: { equals: normalized, mode: 'insensitive' } } } },
       ],
     },
     include: { projects: true },
   })
 
-  if (!client) {
+  if (clients.length !== 1) {
     return { clientId: null, projectId: null }
   }
+  const client = clients[0]
 
   let matchedProjectId = projectId || null
   if (!matchedProjectId && client.projects.length > 0) {
@@ -132,8 +182,13 @@ export async function findInboundThreadConversation(args: {
   projectId?: string | null
   inReplyTo?: string | null
   messageIdHeader?: string | null
+  references?: string | null
 }): Promise<string | null> {
-  const candidates = [args.inReplyTo, args.messageIdHeader].filter((value): value is string => Boolean(value && value.trim()))
+  const candidates = [...new Set([
+    args.inReplyTo,
+    args.messageIdHeader,
+    ...(args.references?.match(/<[^<>]+>/g) ?? []),
+  ].filter((value): value is string => Boolean(value && value.trim())))]
   if (candidates.length === 0) return null
 
   const message = await prisma.emailMessage.findFirst({
@@ -153,32 +208,20 @@ export async function findInboundThreadConversation(args: {
   return message?.conversationId || null
 }
 
-export async function processIncomingResendEmail(payload: any): Promise<{ ok: boolean; message: string; conversationId?: string | null; clientId?: string | null; projectId?: string | null }> {
+export async function processIncomingResendEmail(
+  payload: any,
+  retrieveEmail: (emailId: string) => Promise<ReceivedEmail> = retrieveReceivedEmail,
+): Promise<{ ok: boolean; message: string; conversationId?: string | null; clientId?: string | null; projectId?: string | null }> {
   const event = payload?.data ?? payload
   const eventType = payload?.type ?? event?.type
-  if (!eventType || !['email.received', 'inbox.email.received'].includes(eventType)) {
+  if (eventType !== 'email.received') {
     return { ok: false, message: 'Unsupported Resend event type' }
   }
 
-  const providerMessageId = event.id || event.messageId || null
+  const providerMessageId = event.email_id || null
   if (!providerMessageId) {
-    throw new Error('Resend payload did not include an email identifier.')
+    throw new Error('Resend email.received payload did not include data.email_id.')
   }
-
-  const senderEmail = normalizeEmailValue(event.from ?? event.sender ?? event.from_email ?? event.fromEmail)
-  const recipientEmail = normalizeEmailValue(event.to ?? event.to_email ?? event.toEmail ?? event.recipient ?? event.receiving_address)
-  const subject = typeof event.subject === 'string' ? event.subject.trim() || 'No subject' : 'No subject'
-  const textBody = getTextBody(event)
-  const htmlBody = getHtmlBody(event)
-  const replyThread = {
-    inReplyTo: normalizeEmailValue(event.headers?.['In-Reply-To'] ?? event.in_reply_to ?? event.inReplyTo),
-    messageIdHeader: normalizeEmailValue(event.headers?.['Message-ID'] ?? event.message_id ?? event.messageIdHeader),
-    references: normalizeEmailValue(event.headers?.References ?? event.references),
-  }
-
-  const association = await resolveClientAssociation(senderEmail || recipientEmail, null)
-  const clientId = association.clientId
-  const projectId = association.projectId
 
   const existing = await prisma.emailMessage.findUnique({
     where: { provider_providerMessageId: { provider: 'RESEND', providerMessageId } },
@@ -195,12 +238,29 @@ export async function processIncomingResendEmail(payload: any): Promise<{ ok: bo
     }
   }
 
+  const receivedEmail = await retrieveEmail(providerMessageId)
+  const senderEmail = extractEmailAddress(receivedEmail.from)
+  const recipientEmail = extractEmailAddress(receivedEmail.received_for?.[0] ?? receivedEmail.to?.[0])
+  const subject = receivedEmail.subject?.trim() || 'No subject'
+  const textBody = getTextBody(receivedEmail)
+  const htmlBody = getHtmlBody(receivedEmail)
+  const replyThread = {
+    inReplyTo: getMessageHeader(receivedEmail.headers, 'In-Reply-To'),
+    messageIdHeader: getMessageHeader(receivedEmail.headers, 'Message-ID') || receivedEmail.message_id,
+    references: getMessageHeader(receivedEmail.headers, 'References'),
+  }
+
+  const association = await resolveClientAssociation(senderEmail, null)
+  const clientId = association.clientId
+  const projectId = association.projectId
+
   const matchedConversationId = clientId
     ? await findInboundThreadConversation({
         clientId,
         projectId,
         inReplyTo: replyThread.inReplyTo,
         messageIdHeader: replyThread.messageIdHeader,
+        references: replyThread.references,
       })
     : null
 
@@ -231,6 +291,7 @@ export async function processIncomingResendEmail(payload: any): Promise<{ ok: bo
       subject,
       textBody: textBody || null,
       htmlBody: htmlBody || null,
+      attachments: receivedEmail.attachments,
       provider: 'RESEND',
       providerMessageId,
       messageIdHeader: replyThread.messageIdHeader || null,
@@ -238,7 +299,7 @@ export async function processIncomingResendEmail(payload: any): Promise<{ ok: bo
       references: replyThread.references || null,
       status: 'RECEIVED',
       isRead: false,
-      processedAt: new Date(),
+      processedAt: new Date(receivedEmail.created_at),
     },
   })
 
