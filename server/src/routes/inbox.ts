@@ -3,10 +3,19 @@ import { body, validationResult } from 'express-validator'
 import prisma from '../config/database'
 import { authenticate, AuthRequest } from '../middleware/auth'
 import { requireRole } from '../middleware/roleCheck'
-import { sendThreadedReplyEmail } from '../services/emailService'
+import { sendNewInboxMessageAlert, sendThreadedReplyEmail } from '../services/emailService'
 import { findInboundThreadConversation, processIncomingResendEmail, verifyResendWebhookSignature } from '../services/inboundEmail'
 
 const router = express.Router()
+
+router.get('/unread-count', authenticate, requireRole('ADMIN', 'COMMERCIAL_MANAGER'), async (_req: AuthRequest, res) => {
+  try {
+    const count = await prisma.emailMessage.count({ where: { direction: 'INBOUND', isRead: false } })
+    res.json({ count })
+  } catch {
+    res.status(500).json({ message: 'Server error' })
+  }
+})
 
 router.get('/conversations', authenticate, requireRole('ADMIN', 'COMMERCIAL_MANAGER'), async (_req: AuthRequest, res) => {
   try {
@@ -52,6 +61,23 @@ router.get('/conversations/:id', authenticate, requireRole('ADMIN', 'COMMERCIAL_
   }
 })
 
+router.patch('/conversations/:id/read', authenticate, requireRole('ADMIN', 'COMMERCIAL_MANAGER'), async (req: AuthRequest, res) => {
+  try {
+    const conversation = await prisma.emailConversation.findUnique({ where: { id: req.params.id }, select: { id: true } })
+    if (!conversation) {
+      res.status(404).json({ message: 'Conversation not found' })
+      return
+    }
+    await prisma.emailMessage.updateMany({
+      where: { conversationId: conversation.id, direction: 'INBOUND', isRead: false },
+      data: { isRead: true },
+    })
+    res.json({ message: 'Conversation marked as read.' })
+  } catch {
+    res.status(500).json({ message: 'Server error' })
+  }
+})
+
 router.post('/resend/webhook', async (req, res) => {
   let verifiedPayload: unknown
   try {
@@ -70,6 +96,17 @@ router.post('/resend/webhook', async (req, res) => {
 
   try {
     const result = await processIncomingResendEmail(verifiedPayload)
+    if (result.isNew && result.conversationId) {
+      try {
+        await sendNewInboxMessageAlert({
+          sender: result.senderEmail || 'Unknown sender',
+          subject: result.subject || 'No subject',
+          conversationId: result.conversationId,
+        })
+      } catch (error) {
+        console.error('Failed to send admin alert for new inbox message.', error)
+      }
+    }
     res.status(200).json(result)
   } catch (error) {
     const details = error instanceof Error

@@ -1,4 +1,5 @@
 import { NavLink, useParams } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import {
   LayoutDashboard, FolderOpen, AlertTriangle, ShieldAlert, Briefcase,
   FileText, Bell, ClipboardList, GitBranch, Files, Users, Home, PencilRuler,
@@ -6,8 +7,9 @@ import {
   Mail,
 } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
+import { getInboxUnreadCount } from '../../api/inbox'
 
-function NavItem({ to, icon: Icon, label, end = false, onClose }: { to: string; icon: React.ElementType; label: string; end?: boolean; onClose?: () => void }) {
+function NavItem({ to, icon: Icon, label, end = false, onClose, badge }: { to: string; icon: React.ElementType; label: string; end?: boolean; onClose?: () => void; badge?: number }) {
   return (
     <NavLink
       to={to}
@@ -25,7 +27,8 @@ function NavItem({ to, icon: Icon, label, end = false, onClose }: { to: string; 
         <>
           <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-brand-green' : ''}`} />
           <span>{label}</span>
-          {isActive && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-brand-green" />}
+          {!!badge && <span className="ml-auto min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">{badge > 99 ? '99+' : badge}</span>}
+          {isActive && !badge && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-brand-green" />}
         </>
       )}
     </NavLink>
@@ -65,6 +68,13 @@ function ProjectNav({ projectId }: { projectId: string }) {
 export default function Sidebar({ onClose }: { onClose?: () => void }) {
   const { projectId } = useParams()
   const user = useAuthStore((s) => s.user)
+  const canViewInbox = user?.role === 'ADMIN' || user?.role === 'COMMERCIAL_MANAGER'
+  const { data: unreadInboxCount = 0 } = useQuery({
+    queryKey: ['inboxUnreadCount'],
+    queryFn: getInboxUnreadCount,
+    enabled: canViewInbox,
+    refetchInterval: 30_000,
+  })
 
   return (
     <div className="w-64 lg:w-56 h-full bg-navy-900 flex flex-col shrink-0 border-r border-white/5">
@@ -85,20 +95,12 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
         <NavItem to="/home" icon={LayoutDashboard} label="My Actions" />
         <NavItem to="/projects" icon={FolderOpen} label="Projects" end />
         {(user?.role === 'ADMIN' || user?.role === 'COMMERCIAL_MANAGER') && <NavItem to="/clients" icon={UserRound} label="Clients" />}
-        {(user?.role === 'ADMIN' || user?.role === 'COMMERCIAL_MANAGER') && <NavItem to="/inbox" icon={Mail} label="Inbox" />}
+        {canViewInbox && <NavItem to="/inbox" icon={Mail} label="Inbox" badge={unreadInboxCount} />}
         {(user?.role === 'ADMIN' || user?.role === 'COMMERCIAL_MANAGER') && <NavItem to="/jobs" icon={Briefcase} label="Aurum Jobs" />}
         {user?.role === 'ADMIN' && <NavItem to="/admin/users" icon={Users} label="User Management" />}
         <NavItem to="/settings/notifications" icon={Bell} label="Settings" />
         {projectId && <ProjectNav projectId={projectId} />}
       </nav>
-
-      {/* Bottom tag */}
-      <div className="px-5 py-4 border-t border-white/5">
-        <div className="flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-brand-green animate-pulse" />
-          <span className="text-xs text-slate-500">Layer 1 · Layer 2 · Layer 3</span>
-        </div>
-      </div>
     </div>
   )
 }

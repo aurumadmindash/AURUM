@@ -73,7 +73,14 @@ describe('inbound email helpers', () => {
         messageIdHeader: '<message-1@example.com>',
       }),
     }))
-    expect(result).toMatchObject({ ok: true, conversationId: 'conversation-1', clientId: 'client-1' })
+    expect(result).toMatchObject({
+      ok: true,
+      isNew: true,
+      conversationId: 'conversation-1',
+      clientId: 'client-1',
+      senderEmail: 'client@example.com',
+      subject: 'Project update',
+    })
   })
 
   it('acknowledges duplicate events without retrieving the message again', async () => {
@@ -90,6 +97,6 @@ describe('inbound email helpers', () => {
     )
 
     expect(retrieveEmail).not.toHaveBeenCalled()
-    expect(result).toMatchObject({ ok: true, conversationId: 'conversation-1', clientId: 'client-1' })
+    expect(result).toMatchObject({ ok: true, isNew: false, conversationId: 'conversation-1', clientId: 'client-1' })
   })
 })

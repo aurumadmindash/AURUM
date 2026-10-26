@@ -211,7 +211,7 @@ export async function findInboundThreadConversation(args: {
 export async function processIncomingResendEmail(
   payload: any,
   retrieveEmail: (emailId: string) => Promise<ReceivedEmail> = retrieveReceivedEmail,
-): Promise<{ ok: boolean; message: string; conversationId?: string | null; clientId?: string | null; projectId?: string | null }> {
+): Promise<{ ok: boolean; message: string; conversationId?: string | null; clientId?: string | null; projectId?: string | null; isNew?: boolean; senderEmail?: string | null; subject?: string }> {
   const event = payload?.data ?? payload
   const eventType = payload?.type ?? event?.type
   if (eventType !== 'email.received') {
@@ -235,6 +235,7 @@ export async function processIncomingResendEmail(
       conversationId: existing.conversationId,
       clientId: existing.clientId,
       projectId: existing.projectId,
+      isNew: false,
     }
   }
 
@@ -320,5 +321,8 @@ export async function processIncomingResendEmail(
     conversationId: conversation.id,
     clientId: savedMessage.clientId,
     projectId: savedMessage.projectId,
+    isNew: true,
+    senderEmail,
+    subject,
   }
 }
