@@ -8,6 +8,11 @@ const mocks = vi.hoisted(() => ({
   updateConversation: vi.fn(),
   createMessage: vi.fn(),
   sendAlert: vi.fn(),
+  findUser: vi.fn(),
+  deleteConversations: vi.fn(),
+  deleteMessages: vi.fn(),
+  transaction: vi.fn(),
+  comparePassword: vi.fn(),
 }))
 
 vi.mock('../../config/database', () => ({
@@ -16,8 +21,24 @@ vi.mock('../../config/database', () => ({
       findFirst: mocks.findConversation,
       create: mocks.createConversation,
       update: mocks.updateConversation,
+      deleteMany: mocks.deleteConversations,
     },
-    emailMessage: { create: mocks.createMessage },
+    emailMessage: { create: mocks.createMessage, deleteMany: mocks.deleteMessages },
+    user: { findUnique: mocks.findUser },
+    $transaction: mocks.transaction,
+  },
+}))
+vi.mock('bcryptjs', () => ({ default: { compare: mocks.comparePassword } }))
+vi.mock('../../middleware/auth', () => ({
+  authenticate: (req: { user?: unknown }, _res: unknown, next: () => void) => {
+    req.user = { id: 'admin-1', email: 'admin@example.com', role: 'ADMIN' }
+    next()
+  },
+}))
+vi.mock('../../middleware/roleCheck', () => ({
+  requireRole: (...roles: string[]) => (req: { user?: { role?: string } }, res: { status: (status: number) => { json: (body: unknown) => void } }, next: () => void) => {
+    if (req.user?.role && roles.includes(req.user.role)) next()
+    else res.status(403).json({ message: 'Insufficient permissions' })
   },
 }))
 vi.mock('../../services/emailService', () => ({
@@ -55,6 +76,14 @@ beforeEach(() => {
   mocks.createMessage.mockResolvedValue({ id: 'message-1', createdAt: new Date('2026-10-26T10:00:00Z') })
   mocks.updateConversation.mockResolvedValue({})
   mocks.sendAlert.mockResolvedValue(undefined)
+  mocks.findUser.mockResolvedValue({ password: 'hashed-password' })
+  mocks.comparePassword.mockResolvedValue(true)
+  mocks.deleteConversations.mockResolvedValue({ count: 1 })
+  mocks.deleteMessages.mockResolvedValue({ count: 4 })
+  mocks.transaction.mockImplementation(async (callback: (transaction: unknown) => Promise<unknown>) => callback({
+    emailMessage: { deleteMany: mocks.deleteMessages },
+    emailConversation: { deleteMany: mocks.deleteConversations },
+  }))
 })
 
 describe('public website chat', () => {
@@ -92,5 +121,43 @@ describe('public website chat', () => {
 
     expect(response.status).toBe(400)
     expect(mocks.createMessage).not.toHaveBeenCalled()
+  })
+})
+
+describe('password-protected inbox deletion', () => {
+  it('clears all messages and conversations inside one transaction after password confirmation', async () => {
+    const response = await fetch(`${origin}/inbox/conversations`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: 'correct-password' }),
+    })
+
+    expect(response.status).toBe(200)
+    expect(await response.json()).toMatchObject({ messages: 4, conversations: 1 })
+    expect(mocks.comparePassword).toHaveBeenCalledWith('correct-password', 'hashed-password')
+    expect(mocks.transaction).toHaveBeenCalledOnce()
+  })
+
+  it('does not delete anything when the password is wrong', async () => {
+    mocks.comparePassword.mockResolvedValue(false)
+    const response = await fetch(`${origin}/inbox/conversations`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: 'wrong-password' }),
+    })
+
+    expect(response.status).toBe(401)
+    expect(mocks.transaction).not.toHaveBeenCalled()
+  })
+
+  it('deletes a single conversation only after password confirmation', async () => {
+    const response = await fetch(`${origin}/inbox/conversations/conversation-1`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: 'correct-password' }),
+    })
+
+    expect(response.status).toBe(200)
+    expect(mocks.deleteConversations).toHaveBeenCalledWith({ where: { id: 'conversation-1' } })
   })
 })

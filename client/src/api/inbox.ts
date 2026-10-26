@@ -10,6 +10,12 @@ export const getInboxUnreadCount = () => api.get<{ count: number }>('/inbox/unre
 
 export const getInboxConversation = (id: string) => api.get<EmailConversation>(`/inbox/conversations/${id}`).then((r) => r.data)
 
+export const deleteInboxConversation = (id: string, password: string) =>
+  api.delete(`/inbox/conversations/${encodeURIComponent(id)}`, { data: { password } }).then((r) => r.data)
+
+export const clearInbox = (password: string) =>
+  api.delete('/inbox/conversations', { data: { password } }).then((r) => r.data)
+
 export const markInboxConversationRead = (id: string) => api.patch(`/inbox/conversations/${id}/read`)
 
 export const replyToInboxConversation = (id: string, data: { body: string }) =>

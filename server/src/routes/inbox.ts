@@ -1,6 +1,7 @@
 import express from 'express'
 import { body, validationResult } from 'express-validator'
 import rateLimit from 'express-rate-limit'
+import bcrypt from 'bcryptjs'
 import prisma from '../config/database'
 import { authenticate, AuthRequest } from '../middleware/auth'
 import { requireRole } from '../middleware/roleCheck'
@@ -14,6 +15,13 @@ const publicChatLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { message: 'Please wait before sending another message.' },
+})
+const inboxDeleteLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Too many delete attempts. Please wait before trying again.' },
 })
 
 router.post('/public/chat',
@@ -111,6 +119,70 @@ router.get('/conversations', authenticate, requireRole('ADMIN', 'COMMERCIAL_MANA
     res.status(500).json({ message: 'Server error' })
   }
 })
+
+router.delete('/conversations',
+  authenticate,
+  requireRole('ADMIN'),
+  inboxDeleteLimiter,
+  body('password').isString().notEmpty(),
+  async (req: AuthRequest, res) => {
+    const errors = validationResult(req)
+    if (!errors.isEmpty()) {
+      res.status(400).json({ message: 'Enter your password to clear the inbox.' })
+      return
+    }
+
+    try {
+      const user = await prisma.user.findUnique({ where: { id: req.user!.id }, select: { password: true } })
+      if (!user || !(await bcrypt.compare(req.body.password, user.password))) {
+        res.status(401).json({ message: 'Incorrect password.' })
+        return
+      }
+
+      const deleted = await prisma.$transaction(async (transaction) => {
+        const messages = await transaction.emailMessage.deleteMany()
+        const conversations = await transaction.emailConversation.deleteMany()
+        return { messages: messages.count, conversations: conversations.count }
+      })
+      res.json({ message: 'Inbox cleared.', ...deleted })
+    } catch (error) {
+      console.error('Failed to clear inbox conversations.', error)
+      res.status(500).json({ message: 'The inbox could not be cleared.' })
+    }
+  },
+)
+
+router.delete('/conversations/:id',
+  authenticate,
+  requireRole('ADMIN'),
+  inboxDeleteLimiter,
+  body('password').isString().notEmpty(),
+  async (req: AuthRequest, res) => {
+    const errors = validationResult(req)
+    if (!errors.isEmpty()) {
+      res.status(400).json({ message: 'Enter your password to delete this conversation.' })
+      return
+    }
+
+    try {
+      const user = await prisma.user.findUnique({ where: { id: req.user!.id }, select: { password: true } })
+      if (!user || !(await bcrypt.compare(req.body.password, user.password))) {
+        res.status(401).json({ message: 'Incorrect password.' })
+        return
+      }
+
+      const deleted = await prisma.emailConversation.deleteMany({ where: { id: req.params.id } })
+      if (!deleted.count) {
+        res.status(404).json({ message: 'Conversation not found.' })
+        return
+      }
+      res.json({ message: 'Conversation deleted.' })
+    } catch (error) {
+      console.error('Failed to delete inbox conversation.', error)
+      res.status(500).json({ message: 'The conversation could not be deleted.' })
+    }
+  },
+)
 
 router.get('/conversations/:id', authenticate, requireRole('ADMIN', 'COMMERCIAL_MANAGER'), async (req: AuthRequest, res) => {
   try {
