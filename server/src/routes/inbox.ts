@@ -1,5 +1,6 @@
 import express from 'express'
 import { body, validationResult } from 'express-validator'
+import rateLimit from 'express-rate-limit'
 import prisma from '../config/database'
 import { authenticate, AuthRequest } from '../middleware/auth'
 import { requireRole } from '../middleware/roleCheck'
@@ -7,6 +8,79 @@ import { sendNewInboxMessageAlert, sendThreadedReplyEmail } from '../services/em
 import { findInboundThreadConversation, processIncomingResendEmail, verifyResendWebhookSignature } from '../services/inboundEmail'
 
 const router = express.Router()
+const publicChatLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Please wait before sending another message.' },
+})
+
+router.post('/public/chat',
+  publicChatLimiter,
+  body('name').isString().trim().isLength({ min: 1, max: 100 }),
+  body('email').isEmail().normalizeEmail({ gmail_remove_dots: false, gmail_remove_subaddress: false }),
+  body('message').isString().trim().isLength({ min: 1, max: 4000 }),
+  async (req, res) => {
+    const errors = validationResult(req)
+    if (!errors.isEmpty()) {
+      res.status(400).json({ message: 'Enter your name, a valid email address and a message.' })
+      return
+    }
+
+    const senderEmail = String(req.body.email).trim().toLowerCase()
+    const senderName = String(req.body.name).trim()
+    const textBody = String(req.body.message).trim()
+    try {
+      const existingConversation = await prisma.emailConversation.findFirst({
+        where: {
+          status: 'OPEN',
+          lastMessageAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
+          messages: { some: { direction: 'INBOUND', senderEmail } },
+        },
+        orderBy: { lastMessageAt: 'desc' },
+      })
+      const conversation = existingConversation || await prisma.emailConversation.create({
+        data: {
+          subject: `Chat with ${senderName}`,
+          status: 'OPEN',
+          lastMessageAt: new Date(),
+        },
+      })
+      const savedMessage = await prisma.emailMessage.create({
+        data: {
+          conversationId: conversation.id,
+          direction: 'INBOUND',
+          senderEmail,
+          recipientEmail: process.env.SMTP_FROM || null,
+          subject: conversation.subject || `Website chat with ${senderName}`,
+          textBody,
+          provider: 'WEB_CHAT',
+          status: 'RECEIVED',
+          isRead: false,
+          processedAt: new Date(),
+        },
+      })
+      await prisma.emailConversation.update({
+        where: { id: conversation.id },
+        data: { lastMessageAt: savedMessage.createdAt, status: 'OPEN' },
+      })
+      try {
+        await sendNewInboxMessageAlert({
+          sender: `${senderName} (${senderEmail})`,
+          subject: conversation.subject || 'Website chat',
+          conversationId: conversation.id,
+        })
+      } catch (error) {
+        console.error('Failed to send admin alert for website chat message.', error)
+      }
+      res.status(201).json({ message: 'Message sent. We will reply to you by email.' })
+    } catch (error) {
+      console.error('Failed to save public website chat message.', error)
+      res.status(500).json({ message: 'Your message could not be sent. Please try again.' })
+    }
+  },
+)
 
 router.get('/unread-count', authenticate, requireRole('ADMIN', 'COMMERCIAL_MANAGER'), async (_req: AuthRequest, res) => {
   try {

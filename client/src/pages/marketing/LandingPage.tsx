@@ -4,9 +4,10 @@ import {
   ArrowDown, ArrowRight, ArrowUpRight, Check, CheckCircle2, Clock3, FileCheck2,
   FileSpreadsheet, HardHat, Menu, Ruler, Calculator, ClipboardCheck,
   Briefcase, Layers3, ShieldCheck, Sparkles, X, Building2, UploadCloud,
-  MoveRight,
+  MoveRight, MessageCircle,
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import PublicChatWidget from '../../components/layout/PublicChatWidget'
 
 const media = {
   hero: '/landing/aurum-hero-site.jpg',
@@ -37,6 +38,7 @@ const process = [
 
 export default function LandingPage() {
   const [open, setOpen] = useState(false)
+  const [chatOpen, setChatOpen] = useState(false)
   const [navigation, setNavigation] = useState({ floating: false, visible: true })
   const { hash } = useLocation()
   useEffect(() => {
@@ -100,7 +102,7 @@ export default function LandingPage() {
             <div className="mb-7 inline-flex items-center gap-2.5 rounded-full border border-amber-300/30 bg-black/25 px-4 py-2 text-[10px] font-bold uppercase tracking-[.19em] text-amber-200 backdrop-blur-md"><span className="h-1.5 w-1.5 rounded-full bg-amber-300 shadow-[0_0_12px_#FBBF24]"/> Flexible commercial support for construction</div>
             <h1 className="font-display text-[42px] font-semibold leading-[1.06] tracking-[-.045em] sm:text-6xl lg:text-[72px]">More time <span className="text-amber-300">building.</span><br/>Less time measuring.</h1>
             <p className="mt-7 max-w-2xl text-lg leading-8 text-white/75 sm:text-xl">Outsourced estimating and quantity surveying for contractors who need reliable numbers, clear documents and extra capacity when tenders come in.</p>
-            <div className="mt-9 flex flex-col gap-3 sm:flex-row"><Link to="/request-quote" className="group inline-flex items-center justify-center gap-3 rounded-lg bg-amber-400 px-6 py-4 text-sm font-extrabold text-navy-900 shadow-xl shadow-black/20 transition hover:-translate-y-1 hover:bg-amber-300">Send your drawings <ArrowRight size={17} className="transition group-hover:translate-x-1"/></Link><a href="#services" className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/25 bg-white/[.06] px-6 py-4 text-sm font-bold text-white backdrop-blur-md transition hover:bg-white/15">Explore our services <ArrowDown size={15}/></a></div>
+            <div className="mt-9 flex flex-col gap-3 sm:flex-row"><Link to="/request-quote" className="group inline-flex items-center justify-center gap-3 rounded-lg bg-amber-400 px-6 py-4 text-sm font-extrabold text-navy-900 shadow-xl shadow-black/20 transition hover:-translate-y-1 hover:bg-amber-300">Send your drawings <ArrowRight size={17} className="transition group-hover:translate-x-1"/></Link><button type="button" onClick={() => setChatOpen(true)} className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/25 bg-white/[.06] px-6 py-4 text-sm font-bold text-white backdrop-blur-md transition hover:bg-white/15"><MessageCircle size={16}/> Chat with us now</button><a href="#services" className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/25 bg-white/[.06] px-6 py-4 text-sm font-bold text-white backdrop-blur-md transition hover:bg-white/15">Explore our services <ArrowDown size={15}/></a></div>
             <div className="mt-9 flex flex-wrap items-center gap-x-6 gap-y-3 text-xs font-medium text-white/65"><span className="flex items-center gap-2"><CheckCircle2 size={15} className="text-amber-300"/> Fixed-fee quotations</span><span className="flex items-center gap-2"><CheckCircle2 size={15} className="text-amber-300"/> Flexible extra capacity</span><span className="flex items-center gap-2"><CheckCircle2 size={15} className="text-amber-300"/> Commercial support across projects</span></div>
           </div>
           <div className="landing-reveal landing-reveal-delay relative hidden lg:block">
@@ -178,5 +180,6 @@ export default function LandingPage() {
     </main>
 
     <MarketingFooter />
+    <PublicChatWidget open={chatOpen} onOpenChange={setChatOpen} />
   </div>
 }

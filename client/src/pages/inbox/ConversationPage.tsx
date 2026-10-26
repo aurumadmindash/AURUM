@@ -4,7 +4,7 @@ import { Link, useParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { ArrowLeft, Send, Paperclip, UserRound } from 'lucide-react'
+import { ArrowLeft, Send, Paperclip } from 'lucide-react'
 import { getInboxConversation, markInboxConversationRead, replyToInboxConversation } from '../../api/inbox'
 import Button from '../../components/ui/Button'
 import Textarea from '../../components/ui/Textarea'
@@ -12,6 +12,35 @@ import Textarea from '../../components/ui/Textarea'
 const schema = z.object({
   body: z.string().min(1, 'Reply is required'),
 })
+
+function formatPersonName(value?: string | null) {
+  if (!value) return 'Client'
+
+  const cleaned = value
+    .replace(/<.*?>/g, '')
+    .replace(/"/g, '')
+    .trim()
+
+  if (!cleaned) return 'Client'
+
+  if (cleaned.includes('@')) {
+    const localPart = cleaned.split('@')[0].replace(/[._-]+/g, ' ').trim()
+    const readable = localPart.replace(/\d+$/g, '').trim()
+    return readable
+      ? readable.split(/\s+/).filter(Boolean).map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase()).join(' ')
+      : 'Client'
+  }
+
+  return cleaned
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(' ')
+}
+
+function getContactName(subject: string | null | undefined, client?: { companyName?: string | null; reference?: string | null } | null, senderEmail?: string | null) {
+  return client?.companyName || client?.reference || subject?.match(/^Chat with (.+)$/i)?.[1] || formatPersonName(senderEmail) || 'Client'
+}
 
 export default function ConversationPage() {
   const { conversationId } = useParams<{ conversationId: string }>()
@@ -60,6 +89,9 @@ export default function ConversationPage() {
     return <div className="max-w-4xl p-4">Loading conversation…</div>
   }
 
+  const firstInboundMessage = conversation.messages?.find((message) => message.direction === 'INBOUND')
+  const contactName = getContactName(conversation.subject, conversation.client, firstInboundMessage?.senderEmail)
+
   return (
     <div className="max-w-4xl space-y-4">
       <Link to="/inbox" className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-navy-900">
@@ -69,11 +101,11 @@ export default function ConversationPage() {
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="border-b border-slate-100 p-5 sm:p-6">
           <div className="flex items-start gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-navy-900 text-gold-500"><UserRound className="h-5 w-5" /></div>
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-navy-900 text-xs font-bold text-gold-500">{contactName.slice(0, 2).toUpperCase()}</div>
             <div className="min-w-0">
-              <h1 className="text-xl font-bold text-navy-900">{conversation.subject || 'No subject'}</h1>
+              <h1 className="text-xl font-bold text-navy-900">{contactName}</h1>
               <div className="mt-1 text-sm text-slate-500">
-                {conversation.client?.companyName || conversation.client?.reference || conversation.messages?.find((message) => message.direction === 'INBOUND')?.senderEmail || 'Unassigned sender'}
+                {conversation.subject || 'Conversation'}
                 {conversation.project && ` · ${conversation.project.name}`}
               </div>
             </div>
@@ -85,7 +117,7 @@ export default function ConversationPage() {
             <div key={message.id} className={`flex ${message.direction === 'OUTBOUND' ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-[88%] rounded-2xl px-4 py-3 shadow-sm sm:max-w-[78%] ${message.direction === 'OUTBOUND' ? 'rounded-br-md bg-navy-900 text-white' : 'rounded-bl-md border border-slate-200 bg-white text-slate-800'}`}>
                 <div className={`mb-1.5 flex items-center justify-between gap-5 text-xs ${message.direction === 'OUTBOUND' ? 'text-slate-300' : 'text-slate-400'}`}>
-                  <span className="max-w-[18rem] truncate">{message.direction === 'OUTBOUND' ? 'You' : message.senderEmail || 'Sender'}</span>
+                  <span className="max-w-[18rem] truncate">{message.direction === 'OUTBOUND' ? 'You' : contactName}</span>
                   <time className="shrink-0">{new Date(message.createdAt).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })}</time>
                 </div>
                 <div className="whitespace-pre-wrap break-words text-sm leading-6">{message.textBody || 'No message text.'}</div>

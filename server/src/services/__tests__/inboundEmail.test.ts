@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const db = vi.hoisted(() => ({
   client: { findMany: vi.fn() },
   emailMessage: { findUnique: vi.fn(), findFirst: vi.fn(), create: vi.fn() },
-  emailConversation: { findUnique: vi.fn(), create: vi.fn(), update: vi.fn() },
+  emailConversation: { findUnique: vi.fn(), findFirst: vi.fn(), create: vi.fn(), update: vi.fn() },
 }))
 
 vi.mock('../../config/database', () => ({ default: db }))
@@ -42,6 +42,12 @@ describe('inbound email helpers', () => {
   it('extracts plain text from common payload shapes', () => {
     expect(getTextBody({ text: 'hello world' })).toBe('hello world')
     expect(getTextBody({ html: '<p>Hello <strong>world</strong></p>' })).toBe('Hello world')
+  })
+
+  it('removes quoted email history from the message preview and chat bubble', () => {
+    expect(getTextBody({
+      text: 'I really appreciate your response\nOn Mon, Oct 26, 2026 at 11:23 AM Olufunke <\nolufunke@example.com> wrote:\n> Thank you for your response.',
+    })).toBe('I really appreciate your response')
   })
 
   it('retrieves and persists the full email referenced by Resend email.received', async () => {
@@ -98,5 +104,23 @@ describe('inbound email helpers', () => {
 
     expect(retrieveEmail).not.toHaveBeenCalled()
     expect(result).toMatchObject({ ok: true, isNew: false, conversationId: 'conversation-1', clientId: 'client-1' })
+  })
+
+  it('keeps recent messages from the same sender together when email clients omit thread headers', async () => {
+    db.emailMessage.findUnique.mockResolvedValue(null)
+    db.client.findMany.mockResolvedValue([])
+    db.emailMessage.findFirst.mockResolvedValue(null)
+    db.emailConversation.findFirst.mockResolvedValue({ id: 'existing-conversation', clientId: null, projectId: null })
+    db.emailConversation.findUnique.mockResolvedValue({ id: 'existing-conversation', clientId: null, projectId: null })
+    db.emailMessage.create.mockImplementation(async ({ data }) => ({ id: 'saved-2', createdAt: new Date(), ...data }))
+    db.emailConversation.update.mockResolvedValue({})
+
+    const result = await processIncomingResendEmail(
+      { type: 'email.received', data: { email_id: 'resend-email-2' } },
+      vi.fn().mockResolvedValue(receivedEmail),
+    )
+
+    expect(db.emailConversation.create).not.toHaveBeenCalled()
+    expect(result).toMatchObject({ ok: true, conversationId: 'existing-conversation' })
   })
 })

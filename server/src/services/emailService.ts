@@ -160,10 +160,10 @@ export async function sendNewInboxMessageAlert({
   await transporter.sendMail({
     from: FROM(),
     to: admins.map((admin) => admin.email).join(', '),
-    subject: `New client email: ${subject}`,
-    text: `A new email has arrived in the Aurum inbox.\nFrom: ${sender}\nSubject: ${subject}\n\nOpen the conversation: ${inboxUrl}`,
+    subject: `New client message: ${subject}`,
+    text: `A new message has arrived in the Aurum inbox.\nFrom: ${sender}\nSubject: ${subject}\n\nOpen the conversation: ${inboxUrl}`,
     html: shell(`
-      <h3 style="color:#080F1C;font-size:18px;margin:0 0 12px">New client email received</h3>
+      <h3 style="color:#080F1C;font-size:18px;margin:0 0 12px">New client message received</h3>
       <p style="color:#475569;font-size:14px;line-height:1.6"><strong>From:</strong> ${escapeHtml(sender)}</p>
       <p style="color:#475569;font-size:14px;line-height:1.6"><strong>Subject:</strong> ${escapeHtml(subject)}</p>
       <p style="margin-top:20px"><a href="${escapeHtml(inboxUrl)}" style="background:#080F1C;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none">Open inbox conversation</a></p>

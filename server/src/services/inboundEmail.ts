@@ -105,13 +105,24 @@ export function getTextBody(payload: any): string | null {
   if (!payload || typeof payload !== 'object') return null
 
   const text = typeof payload.text === 'string' ? payload.text : payload.body
-  if (typeof text === 'string' && text.trim()) return text.trim()
+  if (typeof text === 'string' && text.trim()) return stripQuotedEmailText(text)
 
   if (typeof payload.html === 'string' && payload.html.trim()) {
-    return payload.html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+    return stripQuotedEmailText(payload.html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' '))
   }
 
   return null
+}
+
+export function stripQuotedEmailText(value: string): string | null {
+  const lines = value.replace(/\r\n/g, '\n').split('\n')
+  const quoteStart = lines.findIndex((line, index) => {
+    if (/^\s*(?:-{2,}\s*Original Message\s*-{2,}|Begin forwarded message:)\s*$/i.test(line)) return true
+    if (/^\s*On .{0,300}\b wrote:\s*$/i.test(line) || /^\s*On .{0,300}<\s*$/i.test(line)) return true
+    return /^\s*>/.test(line) && lines.slice(index).some((quotedLine) => /^\s*>/.test(quotedLine))
+  })
+  const message = lines.slice(0, quoteStart < 0 ? lines.length : quoteStart).join('\n').trim()
+  return message || null
 }
 
 export function getHtmlBody(payload: any): string | null {
@@ -265,8 +276,20 @@ export async function processIncomingResendEmail(
       })
     : null
 
-  const conversation = matchedConversationId
-    ? await prisma.emailConversation.findUnique({ where: { id: matchedConversationId } })
+  const recentSenderConversation = matchedConversationId || !senderEmail
+    ? null
+    : await prisma.emailConversation.findFirst({
+        where: {
+          status: 'OPEN',
+          lastMessageAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
+          messages: { some: { direction: 'INBOUND', senderEmail } },
+        },
+        orderBy: { lastMessageAt: 'desc' },
+      })
+
+  const existingConversationId = matchedConversationId || recentSenderConversation?.id
+  const conversation = existingConversationId
+    ? await prisma.emailConversation.findUnique({ where: { id: existingConversationId } })
     : await prisma.emailConversation.create({
         data: {
           clientId: clientId || null,

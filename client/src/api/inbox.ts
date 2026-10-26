@@ -1,6 +1,9 @@
 import api from '../lib/apiClient'
 import type { EmailConversation, EmailMessage } from '../types'
 
+export const sendPublicChatMessage = (data: { name: string; email: string; message: string }) =>
+  api.post<{ message: string }>('/inbox/public/chat', data).then((r) => r.data)
+
 export const getInboxConversations = () => api.get<EmailConversation[]>('/inbox/conversations').then((r) => r.data)
 
 export const getInboxUnreadCount = () => api.get<{ count: number }>('/inbox/unread-count').then((r) => r.data.count)

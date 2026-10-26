@@ -3,6 +3,38 @@ import { Link } from 'react-router-dom'
 import { useMemo, useState } from 'react'
 import { Inbox, ArrowRight, Search, Users, Circle } from 'lucide-react'
 import { getInboxConversations } from '../../api/inbox'
+import type { EmailConversation } from '../../types'
+
+function formatPersonName(value?: string | null) {
+  if (!value) return 'Client'
+
+  const cleaned = value
+    .replace(/<.*?>/g, '')
+    .replace(/"/g, '')
+    .trim()
+
+  if (!cleaned) return 'Client'
+
+  if (cleaned.includes('@')) {
+    const localPart = cleaned.split('@')[0].replace(/[._-]+/g, ' ').trim()
+    const readable = localPart.replace(/\d+$/g, '').trim()
+    return readable
+      ? readable.split(/\s+/).filter(Boolean).map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase()).join(' ')
+      : 'Client'
+  }
+
+  return cleaned
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(' ')
+}
+
+function getContactName(conversation: EmailConversation) {
+  const nameFromChat = conversation.subject?.match(/^Chat with (.+)$/i)?.[1]
+  const sender = conversation.messages?.[0]?.direction === 'INBOUND' ? formatPersonName(conversation.messages[0].senderEmail) : null
+  return conversation.client?.companyName || conversation.client?.reference || nameFromChat || sender || 'Client'
+}
 
 export default function InboxPage() {
   const [filter, setFilter] = useState<'all' | 'unread' | 'unassigned'>('all')
@@ -71,20 +103,21 @@ export default function InboxPage() {
             const latest = conversation.messages?.[0]
             const preview = (latest?.textBody || latest?.htmlBody || 'No message preview available.').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
             const unread = latest?.direction === 'INBOUND' && !latest.isRead
-            const sender = latest?.direction === 'OUTBOUND' ? 'You' : latest?.senderEmail || 'Unknown sender'
+            const contactName = getContactName(conversation)
+            const sender = latest?.direction === 'OUTBOUND' ? 'You' : contactName
             const date = conversation.lastMessageAt ? new Date(conversation.lastMessageAt) : null
 
             return (
               <Link key={conversation.id} to={`/inbox/${conversation.id}`} className={`flex items-center gap-4 px-4 py-4 transition-colors hover:bg-slate-50 sm:px-5 ${unread ? 'bg-sky-50/50' : ''}`}>
                 <div className="relative shrink-0">
                   <div className="w-11 h-11 rounded-full bg-navy-900 text-gold-500 flex items-center justify-center font-semibold text-xs">
-                    {(conversation.client?.companyName || sender).slice(0, 2).toUpperCase()}
+                    {contactName.slice(0, 2).toUpperCase()}
                   </div>
                   {unread && <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-white bg-blue-600" />}
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-3">
-                    <div className={`truncate text-sm ${unread ? 'font-bold text-slate-900' : 'font-semibold text-slate-800'}`}>{conversation.client?.companyName || conversation.client?.reference || sender}</div>
+                    <div className={`truncate text-sm ${unread ? 'font-bold text-slate-900' : 'font-semibold text-slate-800'}`}>{contactName}</div>
                     <time className={`shrink-0 text-xs ${unread ? 'font-semibold text-blue-700' : 'text-slate-400'}`}>
                       {date ? date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : ''}
                     </time>
