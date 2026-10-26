@@ -42,6 +42,12 @@ function getContactName(subject: string | null | undefined, client?: { companyNa
   return client?.companyName || client?.reference || subject?.match(/^Chat with (.+)$/i)?.[1] || formatPersonName(senderEmail) || 'Client'
 }
 
+function getReplyErrorMessage(error: unknown) {
+  const responseMessage = (error as { response?: { data?: { message?: string } } })?.response?.data?.message
+  if (responseMessage) return responseMessage
+  return error instanceof Error ? error.message : 'The reply could not be sent. Please try again.'
+}
+
 export default function ConversationPage() {
   const { conversationId } = useParams<{ conversationId: string }>()
   const queryClient = useQueryClient()
@@ -147,7 +153,7 @@ export default function ConversationPage() {
           </Button>
         </div>
         {replyMutation.isSuccess && <p className="text-sm text-green-600">Reply sent successfully.</p>}
-        {replyMutation.isError && <p className="text-sm text-red-600">The reply could not be sent.</p>}
+        {replyMutation.isError && <p role="alert" className="text-sm text-red-600">{getReplyErrorMessage(replyMutation.error)}</p>}
       </form>
     </div>
   )
