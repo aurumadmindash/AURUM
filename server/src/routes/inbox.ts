@@ -71,8 +71,18 @@ router.post('/resend/webhook', async (req, res) => {
   try {
     const result = await processIncomingResendEmail(verifiedPayload)
     res.status(200).json(result)
-  } catch {
-    console.error('Failed to process verified Resend inbound email event.')
+  } catch (error) {
+    const details = error instanceof Error
+      ? {
+          name: error.name,
+          code: 'code' in error && typeof error.code === 'string' ? error.code : undefined,
+          message: error.message
+            .replace(/postgres(?:ql)?:\/\/[^\s"'`]+/gi, '[redacted database URL]')
+            .replace(/\bre_[A-Za-z0-9_-]+\b/g, '[redacted Resend key]')
+            .slice(0, 300),
+        }
+      : { name: 'UnknownError' }
+    console.error('Failed to process verified Resend inbound email event.', details)
     res.status(500).json({ message: 'Email processing failed; Resend may retry this event.' })
   }
 })
