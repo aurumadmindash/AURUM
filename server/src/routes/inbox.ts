@@ -1,0 +1,166 @@
+import express from 'express'
+import { body, validationResult } from 'express-validator'
+import prisma from '../config/database'
+import { authenticate, AuthRequest } from '../middleware/auth'
+import { requireRole } from '../middleware/roleCheck'
+import { sendThreadedReplyEmail } from '../services/emailService'
+import { findInboundThreadConversation, processIncomingResendEmail, verifyResendWebhookSignature } from '../services/inboundEmail'
+
+const router = express.Router()
+
+router.get('/conversations', authenticate, requireRole('ADMIN', 'COMMERCIAL_MANAGER'), async (_req: AuthRequest, res) => {
+  try {
+    const conversations = await prisma.emailConversation.findMany({
+      orderBy: { lastMessageAt: 'desc' },
+      include: {
+        client: { select: { id: true, reference: true, companyName: true, companyEmail: true } },
+        project: { select: { id: true, name: true } },
+        messages: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
+      },
+    })
+
+    res.json(conversations)
+  } catch {
+    res.status(500).json({ message: 'Server error' })
+  }
+})
+
+router.get('/conversations/:id', authenticate, requireRole('ADMIN', 'COMMERCIAL_MANAGER'), async (req: AuthRequest, res) => {
+  try {
+    const conversation = await prisma.emailConversation.findUnique({
+      where: { id: req.params.id },
+      include: {
+        client: { select: { id: true, reference: true, companyName: true, companyEmail: true } },
+        project: { select: { id: true, name: true } },
+        messages: {
+          orderBy: { createdAt: 'asc' },
+        },
+      },
+    })
+
+    if (!conversation) {
+      res.status(404).json({ message: 'Conversation not found' })
+      return
+    }
+
+    res.json(conversation)
+  } catch {
+    res.status(500).json({ message: 'Server error' })
+  }
+})
+
+router.post('/resend/webhook', async (req, res) => {
+  try {
+    const rawBody = Buffer.isBuffer(req.body) ? req.body.toString('utf8') : typeof req.body === 'string' ? req.body : JSON.stringify(req.body ?? {})
+    if (!rawBody.trim()) {
+      res.status(400).json({ message: 'Invalid webhook payload' })
+      return
+    }
+
+    JSON.parse(rawBody)
+    const verifiedPayload = await verifyResendWebhookSignature(req.headers as Record<string, string | string[] | undefined>, rawBody)
+    const result = await processIncomingResendEmail(verifiedPayload)
+    res.status(200).json(result)
+  } catch (error: any) {
+    res.status(400).json({ message: error?.message || 'Invalid webhook signature' })
+  }
+})
+
+router.post('/conversations/:id/reply',
+  authenticate,
+  requireRole('ADMIN', 'COMMERCIAL_MANAGER'),
+  body('body').isString().notEmpty().trim(),
+  async (req: AuthRequest, res) => {
+    const errors = validationResult(req)
+    if (!errors.isEmpty()) {
+      res.status(400).json({ errors: errors.array() })
+      return
+    }
+
+    try {
+      const conversation = await prisma.emailConversation.findUnique({
+        where: { id: req.params.id },
+        include: {
+          messages: {
+            where: { direction: 'INBOUND' },
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+          },
+        },
+      })
+
+      if (!conversation) {
+        res.status(404).json({ message: 'Conversation not found' })
+        return
+      }
+
+      const originalMessage = conversation.messages[0]
+      if (!originalMessage) {
+        res.status(400).json({ message: 'Unable to reply: this conversation has no incoming message.' })
+        return
+      }
+
+      const recipient = originalMessage.senderEmail || ''
+      if (!recipient) {
+        res.status(400).json({ message: 'Unable to reply: no recipient address attached to this message.' })
+        return
+      }
+
+      const threadMessageId = originalMessage.messageIdHeader || null
+      const references = [originalMessage.references, originalMessage.messageIdHeader].filter(Boolean).join(' ')
+      const subject = conversation.subject?.startsWith('Re:') ? conversation.subject : `Re: ${conversation.subject || 'Email thread'}`
+      const reply = await sendThreadedReplyEmail({
+        to: recipient,
+        subject,
+        text: String(req.body.body),
+        inReplyTo: threadMessageId || undefined,
+        references: references || undefined,
+      })
+
+      const saved = await prisma.emailMessage.create({
+        data: {
+          conversationId: conversation.id,
+          clientId: conversation.clientId,
+          projectId: conversation.projectId,
+          direction: 'OUTBOUND',
+          senderEmail: req.user?.email || null,
+          recipientEmail: recipient,
+          subject,
+          textBody: String(req.body.body),
+          provider: 'RESEND',
+          providerMessageId: reply.messageId || null,
+          messageIdHeader: reply.messageId || null,
+          inReplyTo: threadMessageId,
+          references: references || null,
+          status: 'SENT',
+          isRead: true,
+          processedAt: new Date(),
+        },
+      })
+
+      await prisma.emailConversation.update({
+        where: { id: conversation.id },
+        data: {
+          lastMessageAt: new Date(),
+          subject,
+        },
+      })
+
+      const threadMatch = await findInboundThreadConversation({
+        clientId: conversation.clientId,
+        projectId: conversation.projectId,
+        inReplyTo: threadMessageId,
+        messageIdHeader: threadMessageId,
+      })
+
+      res.status(201).json({ message: 'Reply sent successfully.', threadConversationId: threadMatch, emailMessage: saved })
+    } catch (error: any) {
+      res.status(500).json({ message: error?.message || 'Failed to send reply.' })
+    }
+  },
+)
+
+export default router

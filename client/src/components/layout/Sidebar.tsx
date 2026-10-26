@@ -2,6 +2,8 @@ import { NavLink, useParams } from 'react-router-dom'
 import {
   LayoutDashboard, FolderOpen, AlertTriangle, ShieldAlert, Briefcase,
   FileText, Bell, ClipboardList, GitBranch, Files, Users, Home, PencilRuler,
+  UserRound,
+  Mail,
 } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
 
@@ -82,6 +84,8 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
         <SectionLabel>Main</SectionLabel>
         <NavItem to="/home" icon={LayoutDashboard} label="My Actions" />
         <NavItem to="/projects" icon={FolderOpen} label="Projects" end />
+        {(user?.role === 'ADMIN' || user?.role === 'COMMERCIAL_MANAGER') && <NavItem to="/clients" icon={UserRound} label="Clients" />}
+        {(user?.role === 'ADMIN' || user?.role === 'COMMERCIAL_MANAGER') && <NavItem to="/inbox" icon={Mail} label="Inbox" />}
         {(user?.role === 'ADMIN' || user?.role === 'COMMERCIAL_MANAGER') && <NavItem to="/jobs" icon={Briefcase} label="Aurum Jobs" />}
         {user?.role === 'ADMIN' && <NavItem to="/admin/users" icon={Users} label="User Management" />}
         <NavItem to="/settings/notifications" icon={Bell} label="Settings" />

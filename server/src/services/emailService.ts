@@ -62,6 +62,81 @@ export async function sendTestEmail(to: string) {
   return { messageId: info.messageId, response: info.response, accepted: info.accepted, rejected: info.rejected }
 }
 
+export async function sendClientForwardingEmail({
+  to,
+  subject,
+  text,
+}: {
+  to: string
+  subject: string
+  text: string
+}) {
+  if (!emailConfigured()) {
+    throw new Error('SMTP not configured - set SMTP_USER and SMTP_PASS')
+  }
+
+  const info = await transporter.sendMail({
+    from: FROM(),
+    to,
+    subject,
+    text,
+    html: shell(`
+      <h3 style="color:#080F1C;font-size:18px;margin:0 0 12px">Message from Aurum</h3>
+      <p style="color:#475569;font-size:14px;line-height:1.7;margin:0 0 16px">${escapeHtml(text).replace(/\n/g, '<br />')}</p>
+      <p style="color:#64748B;font-size:12px;margin:0">Sent by Aurum Project Controls</p>
+    `),
+  })
+
+  return {
+    messageId: info.messageId,
+    response: info.response,
+    accepted: info.accepted,
+    rejected: info.rejected,
+  }
+}
+
+export async function sendThreadedReplyEmail({
+  to,
+  subject,
+  text,
+  inReplyTo,
+  references,
+}: {
+  to: string
+  subject: string
+  text: string
+  inReplyTo?: string | null
+  references?: string | null
+}) {
+  if (!emailConfigured()) {
+    throw new Error('SMTP not configured - set SMTP_USER and SMTP_PASS')
+  }
+
+  const headers: Record<string, string> = {}
+  if (inReplyTo) headers['In-Reply-To'] = inReplyTo
+  if (references) headers.References = references
+
+  const info = await transporter.sendMail({
+    from: FROM(),
+    to,
+    subject,
+    text,
+    headers,
+    html: shell(`
+      <h3 style="color:#080F1C;font-size:18px;margin:0 0 12px">Reply from Aurum</h3>
+      <p style="color:#475569;font-size:14px;line-height:1.7;margin:0 0 16px">${escapeHtml(text).replace(/\n/g, '<br />')}</p>
+      <p style="color:#64748B;font-size:12px;margin:0">This message was sent from Aurum Project Controls.</p>
+    `),
+  })
+
+  return {
+    messageId: info.messageId,
+    response: info.response,
+    accepted: info.accepted,
+    rejected: info.rejected,
+  }
+}
+
 
 function shell(inner: string): string {
   // Logo is served from the live site; hardcoding the production domain as a
@@ -74,7 +149,6 @@ function shell(inner: string): string {
       <div style="background:#080F1C;padding:20px 24px;border-radius:8px 8px 0 0">
         <img src="${logoUrl}" alt="Aurum" width="44" height="44" style="display:block;border:0;border-radius:8px;margin:0 0 10px" />
         <h2 style="color:#FFFFFF;margin:0;font-size:18px">Aurum Project Controls</h2>
-        <p style="color:#FBBF24;margin:4px 0 0;font-size:12px">NEC Contract Workflow Engine</p>
       </div>
       <div style="background:#fff;padding:24px;border:1px solid #E2E8F0;border-top:none;border-radius:0 0 8px 8px">
         ${inner}

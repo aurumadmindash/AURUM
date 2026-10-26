@@ -4,6 +4,7 @@ import prisma from '../config/database'
 import { authenticate, AuthRequest } from '../middleware/auth'
 import { requireRole, requireProjectAccess, requireProjectRole } from '../middleware/roleCheck'
 import { logAudit } from '../services/auditService'
+import { createClientRecord } from '../services/clientReference'
 import { readLetterhead, LetterheadValidationError } from '../services/projectLetterhead'
 
 const router = express.Router()
@@ -17,6 +18,7 @@ router.get('/', authenticate, async (req: AuthRequest, res): Promise<void> => {
     const projects = await prisma.project.findMany({
       where,
       include: {
+        client: true,
         _count: {
           select: {
             earlyWarnings: true,
@@ -46,10 +48,31 @@ router.post('/',
     if (!errors.isEmpty()) { res.status(400).json({ errors: errors.array() }); return }
 
     try {
-      const { name, description, contractType, clientName, contractorName, startDate, endDate, contractValue } = req.body
+      const { name, description, contractType, clientName, contractorName, clientId, startDate, endDate, contractValue } = req.body
+
+      let resolvedClientId: string | null | undefined = clientId ?? null
+      if (clientId) {
+        const client = await prisma.client.findUnique({ where: { id: clientId } })
+        if (!client) {
+          res.status(404).json({ message: 'Client not found' })
+          return
+        }
+      } else if (clientName || req.body.companyName || req.body.companyEmail || req.body.companyWebsite || req.body.phone) {
+        const client = await createClientRecord({
+          clientName: clientName || req.body.companyName || null,
+          companyName: req.body.companyName || null,
+          companyEmail: req.body.companyEmail || null,
+          companyWebsite: req.body.companyWebsite || null,
+          companyLogo: req.body.companyLogo || null,
+          phone: req.body.phone || null,
+        })
+        resolvedClientId = client.id
+      }
+
       const project = await prisma.project.create({
         data: {
           name, description, contractType, clientName, contractorName,
+          clientId: resolvedClientId ?? undefined,
           ...readLetterhead(req.body),
           startDate: startDate ? new Date(startDate) : undefined,
           endDate: endDate ? new Date(endDate) : undefined,
@@ -71,6 +94,7 @@ router.get('/:projectId', authenticate, requireProjectAccess, async (req: AuthRe
     const project = await prisma.project.findUnique({
       where: { id: req.params.projectId },
       include: {
+        client: true,
         members: {
           include: { user: { select: { id: true, name: true, email: true, role: true } } },
         },
@@ -97,10 +121,42 @@ router.put('/:projectId',
   requireProjectRole('ADMIN', 'COMMERCIAL_MANAGER'),
   async (req: AuthRequest, res): Promise<void> => {
     try {
-      const { id, members, _count, createdAt, updatedAt, ...updateData } = req.body
+      const { id, members, _count, createdAt, updatedAt, clientId, ...rest } = req.body
+      const updateData: Record<string, any> = { ...rest }
       Object.assign(updateData, readLetterhead(req.body))
       if (updateData.startDate) updateData.startDate = new Date(updateData.startDate)
       if (updateData.endDate) updateData.endDate = new Date(updateData.endDate)
+
+      if (clientId) {
+        const client = await prisma.client.findUnique({ where: { id: clientId } })
+        if (!client) {
+          res.status(404).json({ message: 'Client not found' })
+          return
+        }
+        updateData.clientId = clientId
+      } else if (req.body.clientName || req.body.companyName || req.body.companyEmail || req.body.companyWebsite || req.body.phone) {
+        const existingProject = await prisma.project.findUnique({ where: { id: req.params.projectId }, select: { clientId: true } })
+        const client = existingProject?.clientId
+          ? await prisma.client.update({
+            where: { id: existingProject.clientId },
+            data: {
+              clientName: req.body.clientName || req.body.companyName || undefined,
+              companyName: req.body.companyName || undefined,
+              companyEmail: req.body.companyEmail || undefined,
+              companyWebsite: req.body.companyWebsite || undefined,
+              phone: req.body.phone || undefined,
+            },
+          })
+          : await createClientRecord({
+            clientName: req.body.clientName || req.body.companyName || null,
+            companyName: req.body.companyName || null,
+            companyEmail: req.body.companyEmail || null,
+            companyWebsite: req.body.companyWebsite || null,
+            phone: req.body.phone || null,
+          })
+        updateData.clientId = client.id
+      }
+
       const project = await prisma.project.update({ where: { id: req.params.projectId }, data: updateData })
       await logAudit({ userId: req.user!.id, projectId: project.id, entityType: 'Project', entityId: project.id, action: 'UPDATE', ipAddress: req.ip })
       res.json(project)

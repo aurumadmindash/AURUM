@@ -10,6 +10,19 @@ import { fileNameFor } from '../services/pdfService'
 
 const router = express.Router()
 const MAX_QUOTE_UPLOAD = 4 * 1024 * 1024
+const ALLOWED_UPLOAD_TYPES = {
+  '.pdf': ['application/pdf'],
+  '.doc': ['application/msword', 'application/octet-stream'],
+  '.docx': ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/octet-stream'],
+  '.xls': ['application/vnd.ms-excel', 'application/octet-stream'],
+  '.xlsx': ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/octet-stream'],
+  '.csv': ['text/csv', 'application/csv', 'application/vnd.ms-excel', 'application/octet-stream'],
+  '.jpg': ['image/jpeg', 'application/octet-stream'],
+  '.jpeg': ['image/jpeg', 'application/octet-stream'],
+  '.png': ['image/png', 'application/octet-stream'],
+  '.dwg': ['application/acad', 'application/dwg', 'image/vnd.dwg', 'image/x-dwg', 'application/octet-stream'],
+  '.dxf': ['application/dxf', 'image/x-dxf', 'application/octet-stream'],
+} as const
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX_QUOTE_UPLOAD, files: 5, fields: 20, fieldSize: 64 * 1024 } })
 const serviceMap: Record<string, any> = {
   'Take-off': 'TAKE_OFF', Estimate: 'ESTIMATE', 'Tender support': 'TENDER_SUPPORT',
@@ -24,6 +37,16 @@ function asDate(value: unknown): Date | undefined {
   if (!value) return undefined
   const d = new Date(String(value))
   return Number.isNaN(d.getTime()) ? undefined : d
+}
+
+function hasAllowedUploadType(file: Express.Multer.File): boolean {
+  const originalName = (file.originalname || '').toLowerCase()
+  const lastDot = originalName.lastIndexOf('.')
+  const extension = lastDot >= 0 ? originalName.slice(lastDot) : ''
+  const allowedMimeTypes: readonly string[] = ALLOWED_UPLOAD_TYPES[extension as keyof typeof ALLOWED_UPLOAD_TYPES]
+  if (!allowedMimeTypes) return false
+  const mimetype = (file.mimetype || '').toLowerCase()
+  return allowedMimeTypes.includes(mimetype)
 }
 
 async function nextInvoiceNumber() {
@@ -58,6 +81,10 @@ router.post('/quote-requests', (req, res, next) => {
     const files = req.files as Record<string, Express.Multer.File[]> | undefined
     const uploadSize = Object.values(files || {}).flat().reduce((total, file) => total + file.size, 0)
     if (uploadSize > MAX_QUOTE_UPLOAD) { res.status(413).json({ message: 'Keep all documents under 4 MB in total.' }); return }
+    const invalidFiles = Object.values(files || {}).flat().filter((file) => !hasAllowedUploadType(file))
+    if (invalidFiles.length > 0) {
+      res.status(400).json({ message: 'Unsupported file type. Please upload PDF, DOC/DOCX, XLS/XLSX, CSV, JPG/PNG, or DWG/DXF files only.' }); return
+    }
     const documents = Object.entries(files || {}).flatMap(([kind, list]) => (list || []).map(file => ({
       kind, name: file.originalname, mimeType: file.mimetype, size: file.size, data: file.buffer,
     })))

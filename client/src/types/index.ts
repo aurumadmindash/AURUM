@@ -32,8 +32,72 @@ export interface ProjectMember {
   user: Pick<User, 'id' | 'name' | 'email' | 'role'>
 }
 
+export interface ClientEmailLog {
+  id: string
+  subject: string
+  recipientEmail: string
+  status: string
+  createdAt: string
+}
+
+export type EmailDirection = 'INBOUND' | 'OUTBOUND'
+export type EmailMessageStatus = 'RECEIVED' | 'SENT' | 'FAILED' | 'QUEUED'
+
+export interface EmailMessage {
+  id: string
+  conversationId: string
+  clientId?: string | null
+  projectId?: string | null
+  direction: EmailDirection
+  senderEmail?: string | null
+  recipientEmail?: string | null
+  subject?: string | null
+  textBody?: string | null
+  htmlBody?: string | null
+  providerMessageId?: string | null
+  messageIdHeader?: string | null
+  inReplyTo?: string | null
+  references?: string | null
+  status: EmailMessageStatus
+  isRead: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export interface EmailConversation {
+  id: string
+  clientId?: string | null
+  projectId?: string | null
+  subject?: string | null
+  status: string
+  lastMessageAt?: string | null
+  createdAt: string
+  updatedAt: string
+  client?: { id: string; reference: string; companyName?: string | null; companyEmail?: string | null } | null
+  project?: { id: string; name: string } | null
+  messages?: EmailMessage[]
+}
+
+export interface Client {
+  id: string
+  reference: string
+  clientName?: string | null
+  companyName?: string | null
+  companyEmail?: string | null
+  companyWebsite?: string | null
+  companyLogo?: string | null
+  phone?: string | null
+  notes?: string | null
+  createdAt: string
+  updatedAt: string
+  _count?: { projects: number }
+  projects?: Pick<Project, 'id' | 'name' | 'clientName' | 'companyName' | 'contractType' | 'isActive' | 'createdAt'>[]
+  emailLogs?: ClientEmailLog[]
+}
+
 export interface Project {
   id: string
+  clientId?: string | null
   name: string
   description?: string
   contractType: ContractType
@@ -49,6 +113,7 @@ export interface Project {
   isActive: boolean
   createdAt: string
   updatedAt: string
+  client?: Client | null
   members?: ProjectMember[]
   _count?: {
     earlyWarnings: number

@@ -9,6 +9,7 @@ import rateLimit from 'express-rate-limit'
 
 import authRoutes from './routes/auth'
 import projectRoutes from './routes/projects'
+import clientRoutes from './routes/clients'
 import earlyWarningRoutes from './routes/earlyWarnings'
 import riskRoutes from './routes/risks'
 import ceRoutes from './routes/compensationEvents'
@@ -22,6 +23,7 @@ import documentRoutes from './routes/documents'
 import myActionRoutes from './routes/myActions'
 import businessRoutes from './routes/business'
 import invoicePaymentRoutes, { stripeWebhook } from './routes/invoicePayments'
+import inboxRoutes from './routes/inbox'
 import { sendOverdueNotifications } from './services/emailService'
 import { summarizeDbError } from './services/databaseHealth'
 
@@ -46,6 +48,7 @@ app.use(cors({
   credentials: true,
 }))
 app.use(morgan('dev'))
+app.use('/api/inbox/resend/webhook', express.raw({ type: '*/*', limit: '1mb' }))
 app.post('/api/business/stripe/webhook', express.raw({ type: 'application/json', limit: '1mb' }), stripeWebhook)
 app.use(express.json({ limit: '512kb' }))
 app.use(express.urlencoded({ extended: true }))
@@ -63,6 +66,8 @@ app.use('/api', rateLimit({
 
 app.use('/api/auth', authRoutes)
 app.use('/api/me', myActionRoutes)
+app.use('/api/clients', clientRoutes)
+app.use('/api/inbox', inboxRoutes)
 app.use('/api/projects', projectRoutes)
 app.use('/api/projects', earlyWarningRoutes)
 app.use('/api/projects', riskRoutes)

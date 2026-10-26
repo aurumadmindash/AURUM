@@ -90,8 +90,115 @@ model PasswordReset {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+model ClientReferenceSequence {
+  id        String   @id @default("client_reference_seed")
+  nextValue Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Client {
+  id             String   @id @default(cuid())
+  reference      String   @unique
+  clientName     String?
+  companyName    String?
+  companyEmail   String?
+  companyWebsite String?
+  companyLogo    String?
+  phone          String?
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  projects          Project[]
+  emailLogs         ClientEmailLog[]
+  emailConversations EmailConversation[]
+  emailMessages     EmailMessage[]
+}
+
+enum EmailMessageDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum EmailMessageStatus {
+  RECEIVED
+  SENT
+  FAILED
+  QUEUED
+}
+
+model EmailConversation {
+  id             String    @id @default(cuid())
+  clientId       String?
+  projectId      String?
+  subject        String?
+  status         String    @default("OPEN")
+  lastMessageAt  DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  client  Client?  @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  messages EmailMessage[]
+
+  @@index([clientId, updatedAt])
+  @@index([projectId, updatedAt])
+}
+
+model EmailMessage {
+  id             String                @id @default(cuid())
+  conversationId String
+  clientId       String?
+  projectId      String?
+  direction      EmailMessageDirection @default(INBOUND)
+  senderEmail    String?
+  recipientEmail String?
+  subject        String?
+  textBody       String?
+  htmlBody       String?
+  provider       String                @default("RESEND")
+  providerMessageId String?
+  messageIdHeader  String?
+  inReplyTo      String?
+  references     String?
+  status         EmailMessageStatus    @default(RECEIVED)
+  isRead         Boolean               @default(false)
+  processedAt    DateTime?
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+
+  conversation EmailConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  client       Client?           @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  project      Project?          @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  @@unique([provider, providerMessageId])
+  @@index([conversationId, createdAt])
+  @@index([clientId, createdAt])
+  @@index([providerMessageId])
+}
+
+model ClientEmailLog {
+  id            String    @id @default(cuid())
+  clientId      String
+  projectId     String?
+  sentBy        String?
+  recipientEmail String
+  subject       String
+  body          String
+  status        String    @default("SENT")
+  messageId     String?
+  errorMessage  String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  client  Client  @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+}
+
 model Project {
   id             String       @id @default(cuid())
+  clientId       String?
   name           String
   description    String?
   contractType   ContractType @default(NEC4)
@@ -108,6 +215,7 @@ model Project {
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
+  client             Client?             @relation(fields: [clientId], references: [id], onDelete: SetNull)
   members            ProjectMember[]
   invitations        Invitation[]
   earlyWarnings      EarlyWarning[]
@@ -117,6 +225,9 @@ model Project {
   auditLogs          AuditLog[]
   comments           Comment[]
   documents          Document[]
+  emailLogs          ClientEmailLog[]
+  emailConversations EmailConversation[]
+  emailMessages      EmailMessage[]
 }
 
 model ProjectMember {

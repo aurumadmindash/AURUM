@@ -18,6 +18,10 @@ const NotificationsPage = lazy(() => import('./pages/settings/NotificationsPage'
 const MyActionsPage = lazy(() => import('./pages/home/MyActionsPage'))
 const DashboardPage = lazy(() => import('./pages/dashboard/DashboardPage'))
 const ProjectsPage = lazy(() => import('./pages/projects/ProjectsPage'))
+const ClientsPage = lazy(() => import('./pages/clients/ClientsPage'))
+const ClientDetailPage = lazy(() => import('./pages/clients/ClientDetailPage'))
+const InboxPage = lazy(() => import('./pages/inbox/InboxPage'))
+const ConversationPage = lazy(() => import('./pages/inbox/ConversationPage'))
 const ProjectDetailPage = lazy(() => import('./pages/projects/ProjectDetailPage'))
 const EarlyWarningsPage = lazy(() => import('./pages/early-warnings/EarlyWarningsPage'))
 const RisksPage = lazy(() => import('./pages/risks/RisksPage'))
@@ -72,6 +76,10 @@ export default function App() {
           <Route path="jobs/:id" element={<JobDetailPage />} />
           <Route path="jobs/:id/proposal" element={<FeeProposalPage />} />
           <Route path="projects" element={<ProjectsPage />} />
+          <Route path="clients" element={<ClientsPage />} />
+          <Route path="clients/:clientId" element={<ClientDetailPage />} />
+          <Route path="inbox" element={<InboxPage />} />
+          <Route path="inbox/:conversationId" element={<ConversationPage />} />
           <Route path="admin/users" element={<UsersPage />} />
           <Route path="settings/notifications" element={<NotificationsPage />} />
           <Route path="projects/:projectId" element={<ProjectDetailPage />} />

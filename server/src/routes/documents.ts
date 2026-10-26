@@ -16,6 +16,29 @@ const CATEGORIES = ['GENERAL', 'PHOTO', 'DRAWING'] as const
 type Category = typeof CATEGORIES[number]
 
 const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic']
+const ALLOWED_DOCUMENT_TYPES = {
+  '.pdf': ['application/pdf', 'application/octet-stream'],
+  '.doc': ['application/msword', 'application/octet-stream'],
+  '.docx': ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/octet-stream'],
+  '.xls': ['application/vnd.ms-excel', 'application/octet-stream'],
+  '.xlsx': ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/octet-stream'],
+  '.csv': ['text/csv', 'application/csv', 'application/vnd.ms-excel', 'application/octet-stream'],
+  '.jpg': ['image/jpeg', 'application/octet-stream'],
+  '.jpeg': ['image/jpeg', 'application/octet-stream'],
+  '.png': ['image/png', 'application/octet-stream'],
+  '.dwg': ['application/acad', 'application/dwg', 'image/vnd.dwg', 'image/x-dwg', 'application/octet-stream'],
+  '.dxf': ['application/dxf', 'image/x-dxf', 'application/octet-stream'],
+} as const
+
+function hasAllowedDocumentType(file: Express.Multer.File): boolean {
+  const name = (file.originalname || '').toLowerCase()
+  const lastDot = name.lastIndexOf('.')
+  const extension = lastDot >= 0 ? name.slice(lastDot) : ''
+  const allowedMimeTypes: readonly string[] = ALLOWED_DOCUMENT_TYPES[extension as keyof typeof ALLOWED_DOCUMENT_TYPES]
+  if (!allowedMimeTypes) return false
+  const mimetype = (file.mimetype || '').toLowerCase()
+  return allowedMimeTypes.includes(mimetype)
+}
 
 // Never select `data` in list responses - file bytes must not travel with JSON
 const docSelect = {
@@ -62,6 +85,11 @@ router.post('/:projectId/documents',
     const { ceId, ewId, reference } = req.body
 
     try {
+      const isAllowedFile = hasAllowedDocumentType(req.file)
+      if (!isAllowedFile) {
+        res.status(400).json({ message: 'Unsupported file type. Please upload PDF, DOC/DOCX, XLS/XLSX, CSV, JPG/PNG, or DWG/DXF files only.' })
+        return
+      }
       // Photo proofs must actually be images, or the gallery breaks
       if (category === 'PHOTO' && !IMAGE_TYPES.includes(req.file.mimetype)) {
         res.status(400).json({ message: 'Photo proofs must be an image (JPG, PNG, WEBP or GIF).' })
