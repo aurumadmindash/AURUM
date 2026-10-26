@@ -68,6 +68,7 @@ router.post('/public/chat',
       try {
         await sendNewInboxMessageAlert({
           sender: `${senderName} (${senderEmail})`,
+          senderEmail,
           subject: conversation.subject || 'Website chat',
           conversationId: conversation.id,
         })
@@ -174,6 +175,7 @@ router.post('/resend/webhook', async (req, res) => {
       try {
         await sendNewInboxMessageAlert({
           sender: result.senderEmail || 'Unknown sender',
+          senderEmail: result.senderEmail,
           subject: result.subject || 'No subject',
           conversationId: result.conversationId,
         })

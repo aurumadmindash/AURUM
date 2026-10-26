@@ -139,10 +139,12 @@ export async function sendThreadedReplyEmail({
 
 export async function sendNewInboxMessageAlert({
   sender,
+  senderEmail,
   subject,
   conversationId,
 }: {
   sender: string
+  senderEmail?: string | null
   subject: string
   conversationId: string
 }) {
@@ -150,16 +152,24 @@ export async function sendNewInboxMessageAlert({
     throw new Error('Email is not configured: set SMTP_USER, SMTP_PASS and SMTP_FROM.')
   }
 
+  const senderAddress = extractEmailAddress(senderEmail || sender)
+  const internalAddresses = new Set(
+    [extractEmailAddress(process.env.SMTP_FROM), extractEmailAddress(process.env.SALES_EMAIL)]
+      .filter((address): address is string => address !== null),
+  )
+  if (senderAddress && internalAddresses.has(senderAddress)) return
+
   const admins = await prisma.user.findMany({
     where: { role: 'ADMIN', isActive: true },
     select: { email: true },
   })
-  if (!admins.length) return
+  const recipients = admins.filter((admin) => extractEmailAddress(admin.email) !== senderAddress)
+  if (!recipients.length) return
 
   const inboxUrl = `${(process.env.CLIENT_URL || 'https://www.aurumite.com').replace(/\/$/, '')}/inbox/${encodeURIComponent(conversationId)}`
   await transporter.sendMail({
     from: FROM(),
-    to: admins.map((admin) => admin.email).join(', '),
+    to: recipients.map((admin) => admin.email).join(', '),
     subject: `New client message: ${subject}`,
     text: `A new message has arrived in the Aurum inbox.\nFrom: ${sender}\nSubject: ${subject}\n\nOpen the conversation: ${inboxUrl}`,
     html: shell(`
@@ -169,6 +179,13 @@ export async function sendNewInboxMessageAlert({
       <p style="margin-top:20px"><a href="${escapeHtml(inboxUrl)}" style="background:#080F1C;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none">Open inbox conversation</a></p>
     `),
   })
+}
+
+function extractEmailAddress(value: unknown): string | null {
+  if (typeof value !== 'string') return null
+  const address = value.match(/<([^<>]+)>/)?.[1] || value
+  const normalized = address.trim().toLowerCase()
+  return /^[^\s<>@]+@[^\s<>@]+$/.test(normalized) ? normalized : null
 }
 
 function shell(inner: string): string {

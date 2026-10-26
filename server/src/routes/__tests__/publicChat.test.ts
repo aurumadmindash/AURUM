@@ -78,6 +78,7 @@ describe('public website chat', () => {
     }))
     expect(mocks.sendAlert).toHaveBeenCalledWith(expect.objectContaining({
       sender: 'Alex Example (alex@example.com)',
+      senderEmail: 'alex@example.com',
       conversationId: 'chat-1',
     }))
   })

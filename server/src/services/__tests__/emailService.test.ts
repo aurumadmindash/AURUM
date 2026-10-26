@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const mocks = vi.hoisted(() => ({ sendMail: vi.fn(), createTransport: vi.fn(), project: vi.fn(), users: vi.fn() }))
 vi.mock('nodemailer', () => ({ default: { createTransport: mocks.createTransport } }))
 vi.mock('../../config/database', () => ({ default: { project: { findUnique: mocks.project }, user: { findMany: mocks.users } } }))
-import { notifyContractEvent, notifyBusinessChange, sendPasswordResetEmail, sendQuoteReceivedEmail, sendQuoteInternalEmail, sendAccountApprovalEmail } from '../emailService'
+import { notifyContractEvent, notifyBusinessChange, sendNewInboxMessageAlert, sendPasswordResetEmail, sendQuoteReceivedEmail, sendQuoteInternalEmail, sendAccountApprovalEmail } from '../emailService'
 
 beforeEach(() => {
   vi.resetAllMocks()
@@ -35,6 +35,32 @@ describe('project email delivery', () => {
     mocks.users.mockResolvedValue([])
     await sendAccountApprovalEmail({ id: 'pending-1', name: 'New user', email: 'new@example.com', createdAt: new Date() })
     expect(mocks.sendMail).not.toHaveBeenCalled()
+  })
+  it('does not email admin alerts back to one of Aurum’s own mailboxes', async () => {
+    await sendNewInboxMessageAlert({
+      sender: 'sales@aurumite.com',
+      senderEmail: 'sales@aurumite.com',
+      subject: 'New client message',
+      conversationId: 'conversation-1',
+    })
+    await sendNewInboxMessageAlert({
+      sender: 'enquiries@aurumite.com',
+      senderEmail: 'enquiries@aurumite.com',
+      subject: 'New client message',
+      conversationId: 'conversation-1',
+    })
+    expect(mocks.users).not.toHaveBeenCalled()
+    expect(mocks.sendMail).not.toHaveBeenCalled()
+  })
+  it('excludes the originating admin from a new-message alert', async () => {
+    mocks.users.mockResolvedValue([{ email: 'sender@example.com' }, { email: 'admin@example.com' }])
+    await sendNewInboxMessageAlert({
+      sender: 'sender@example.com',
+      senderEmail: 'sender@example.com',
+      subject: 'Project update',
+      conversationId: 'conversation-1',
+    })
+    expect(mocks.sendMail.mock.calls[0][0].to).toBe('admin@example.com')
   })
   it.each([
     ['enquiries@aurumite.com', '"Aurum Project Controls" <enquiries@aurumite.com>'],

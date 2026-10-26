@@ -254,6 +254,20 @@ export async function processIncomingResendEmail(
   const senderEmail = extractEmailAddress(receivedEmail.from)
   const recipientEmail = extractEmailAddress(receivedEmail.received_for?.[0] ?? receivedEmail.to?.[0])
   const subject = receivedEmail.subject?.trim() || 'No subject'
+  const internalSenderAddresses = new Set(
+    [extractEmailAddress(process.env.SMTP_FROM), extractEmailAddress(process.env.SALES_EMAIL)]
+      .filter((address): address is string => address !== null),
+  )
+  if (senderEmail && internalSenderAddresses.has(senderEmail)) {
+    return {
+      ok: true,
+      message: 'Internal email ignored.',
+      isNew: false,
+      senderEmail,
+      subject,
+    }
+  }
+
   const textBody = getTextBody(receivedEmail)
   const htmlBody = getHtmlBody(receivedEmail)
   const replyThread = {

@@ -26,6 +26,7 @@ const receivedEmail = {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  vi.unstubAllEnvs()
 })
 
 describe('inbound email helpers', () => {
@@ -105,6 +106,25 @@ describe('inbound email helpers', () => {
     expect(retrieveEmail).not.toHaveBeenCalled()
     expect(result).toMatchObject({ ok: true, isNew: false, conversationId: 'conversation-1', clientId: 'client-1' })
   })
+
+  it.each(['sales@aurumite.com', 'enquiries@aurumite.com'])(
+    'ignores mail sent from the configured business mailbox (%s) to prevent alert loops',
+    async (senderEmail) => {
+      vi.stubEnv('SALES_EMAIL', 'sales@aurumite.com')
+      vi.stubEnv('SMTP_FROM', 'Aurum <enquiries@aurumite.com>')
+      db.emailMessage.findUnique.mockResolvedValue(null)
+      const retrieveEmail = vi.fn().mockResolvedValue({ ...receivedEmail, from: senderEmail })
+
+      const result = await processIncomingResendEmail(
+        { type: 'email.received', data: { email_id: 'internal-email-1' } },
+        retrieveEmail,
+      )
+
+      expect(result).toMatchObject({ ok: true, isNew: false, senderEmail, message: 'Internal email ignored.' })
+      expect(db.emailMessage.create).not.toHaveBeenCalled()
+      expect(db.emailConversation.create).not.toHaveBeenCalled()
+    },
+  )
 
   it('keeps recent messages from the same sender together when email clients omit thread headers', async () => {
     db.emailMessage.findUnique.mockResolvedValue(null)
