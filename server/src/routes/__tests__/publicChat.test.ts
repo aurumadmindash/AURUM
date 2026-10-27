@@ -13,12 +13,16 @@ const mocks = vi.hoisted(() => ({
   deleteMessages: vi.fn(),
   transaction: vi.fn(),
   comparePassword: vi.fn(),
+  findConversationById: vi.fn(),
+  sendReply: vi.fn(),
+  findInboundThread: vi.fn(),
 }))
 
 vi.mock('../../config/database', () => ({
   default: {
     emailConversation: {
       findFirst: mocks.findConversation,
+      findUnique: mocks.findConversationById,
       create: mocks.createConversation,
       update: mocks.updateConversation,
       deleteMany: mocks.deleteConversations,
@@ -43,10 +47,10 @@ vi.mock('../../middleware/roleCheck', () => ({
 }))
 vi.mock('../../services/emailService', () => ({
   sendNewInboxMessageAlert: mocks.sendAlert,
-  sendThreadedReplyEmail: vi.fn(),
+  sendThreadedReplyEmail: mocks.sendReply,
 }))
 vi.mock('../../services/inboundEmail', () => ({
-  findInboundThreadConversation: vi.fn(),
+  findInboundThreadConversation: mocks.findInboundThread,
   processIncomingResendEmail: vi.fn(),
   verifyResendWebhookSignature: vi.fn(),
 }))
@@ -80,6 +84,8 @@ beforeEach(() => {
   mocks.comparePassword.mockResolvedValue(true)
   mocks.deleteConversations.mockResolvedValue({ count: 1 })
   mocks.deleteMessages.mockResolvedValue({ count: 4 })
+  mocks.findInboundThread.mockResolvedValue(null)
+  mocks.sendReply.mockResolvedValue({ messageId: 'outbound-1', accepted: ['alex@example.com'], rejected: [] })
   mocks.transaction.mockImplementation(async (callback: (transaction: unknown) => Promise<unknown>) => callback({
     emailMessage: { deleteMany: mocks.deleteMessages },
     emailConversation: { deleteMany: mocks.deleteConversations },
@@ -159,5 +165,45 @@ describe('password-protected inbox deletion', () => {
 
     expect(response.status).toBe(200)
     expect(mocks.deleteConversations).toHaveBeenCalledWith({ where: { id: 'conversation-1' } })
+  })
+})
+
+describe('website chat replies', () => {
+  beforeEach(() => {
+    mocks.findConversationById.mockResolvedValue({
+      id: 'chat-1',
+      clientId: null,
+      projectId: null,
+      subject: 'Chat with Alex',
+      messages: [{ senderEmail: 'alex@example.com', messageIdHeader: null, references: null }],
+    })
+  })
+
+  it('records a reply only after the provider accepts the recipient', async () => {
+    const response = await fetch(`${origin}/inbox/conversations/chat-1/reply`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ body: 'Thanks for getting in touch.' }),
+    })
+
+    expect(response.status).toBe(201)
+    expect(mocks.sendReply).toHaveBeenCalledWith(expect.objectContaining({ to: 'alex@example.com' }))
+    expect(mocks.createMessage).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ direction: 'OUTBOUND', recipientEmail: 'alex@example.com', status: 'SENT' }),
+    }))
+  })
+
+  it('reports provider rejection without recording a sent message', async () => {
+    mocks.sendReply.mockResolvedValueOnce({ messageId: '', accepted: [], rejected: ['alex@example.com'] })
+
+    const response = await fetch(`${origin}/inbox/conversations/chat-1/reply`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ body: 'Thanks for getting in touch.' }),
+    })
+
+    expect(response.status).toBe(502)
+    expect(await response.json()).toMatchObject({ message: expect.stringContaining('did not accept') })
+    expect(mocks.createMessage).not.toHaveBeenCalled()
   })
 })

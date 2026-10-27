@@ -322,6 +322,15 @@ router.post('/conversations/:id/reply',
         inReplyTo: threadMessageId || undefined,
         references: references || undefined,
       })
+      if (!reply.accepted.length || reply.rejected.length) {
+        console.error('Email provider did not accept inbox reply recipient.', {
+          conversationId: conversation.id,
+          acceptedCount: reply.accepted.length,
+          rejectedCount: reply.rejected.length,
+        })
+        res.status(502).json({ message: 'The email provider did not accept this reply. Check Resend email logs for the delivery details.' })
+        return
+      }
 
       const saved = await prisma.emailMessage.create({
         data: {
@@ -360,8 +369,9 @@ router.post('/conversations/:id/reply',
       })
 
       res.status(201).json({ message: 'Reply sent successfully.', threadConversationId: threadMatch, emailMessage: saved })
-    } catch (error: any) {
-      res.status(500).json({ message: error?.message || 'Failed to send reply.' })
+    } catch (error) {
+      console.error('Failed to send inbox reply.', error)
+      res.status(502).json({ message: 'The reply could not be accepted for delivery. Check the Resend email logs for details.' })
     }
   },
 )
